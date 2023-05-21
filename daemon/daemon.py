@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from bcc import BPF
 from time import sleep
-from config import FILE, SERVER_IP, SERVER_PORT, SIGNALS
+from config import *
 from helper import *
 import datetime
 import psutil
@@ -25,7 +25,7 @@ b.attach_kretprobe(event="vfs_writev", fn_name="vfs_count_exit")
 
 # Send Metadata (Initialize done)
 print("Send Metadata to Aggregator Server... ")
-postData('/', get_metadata())
+postData('/insert_hw', get_metadata())
 
 # trace until Ctrl-C
 print("Docker Tracing Start...")
