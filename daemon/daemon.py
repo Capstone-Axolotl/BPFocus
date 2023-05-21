@@ -1,95 +1,12 @@
 #!/usr/bin/env python3
 from bcc import BPF
 from time import sleep
-from config import FILE, SERVER_IP, SERVER_PORT, SIGNALS, get_metadata
+from config import FILE, SERVER_IP, SERVER_PORT, SIGNALS
+from helper import postData, handle_exit, ids, monitor_container_events, get_metadata
 import datetime
-import requests
 import psutil
 import threading
-import json
-import platform
 import signal
-import sys
-import os
-import docker
-
-def postData(path='/', data=None) -> None:
-    """
-    Send json format data to server
-    """
-    headers = {'Content-Type': 'application/json'}
-    json_data = json.dumps(data)
-    url = 'http://' + SERVER_IP + ':' + str(SERVER_PORT) + path
-    def send_request():
-        try:
-            response = requests.post(url, headers=headers, data=json_data)
-            if response.status_code == 200:
-                print('Data sent successfully')
-            else:
-                print('Failed to send data')
-        except requests.exceptions.ConnectionError:
-            print('[*] Aggregator Server is down')
-
-    thread = threading.Thread(target=send_request)
-    thread.start()
-
-def handle_exit(signal, frame):
-    """
-    Handle signal and send signal number to server
-    """
-    print(f"시그널 {signal} 수신, 프로그램 종료")
-    data_signal = {'exception': {
-        'signal': signal
-    }}
-    postData('/', data_signal)
-
-
-ids = {}
-def monitor_container_events():
-    global ids
-    client = docker.from_env()
-    containers = client.containers.list()
-    for cnt in containers:
-        ids[cnt.id] = {
-            'name': cnt.name,
-            'image': cnt.image.tags[0]
-        }
-
-    events = client.events(decode=True)
-    for event in events:
-        if 'status' in event and 'id' in event:
-            container_id = event['id']
-            status = event['status']
-            attr = event['Actor']['Attributes']
-            if status == 'start':
-                ids[container_id] = {
-                    'name': attr['name'],
-                    'image': attr['image']
-                }
-                print(f"[+] Container Started: {container_id}")
-                data_container = {
-                    'container': {
-                        'status': status,
-                        'id': container_id,
-                        'information': ids[container_id]
-                    }
-                }
-                postData('/', data_container)
-
-            if status == 'die':
-                print(f"[-] Container Died: {container_id}")
-                data_container = {
-                    'container': {
-                        'status': status,
-                        'id': container_id,
-                        'information': ids[container_id]
-                    }
-                }
-                postData('/', data_container)
-                del ids[container_id]
-
-
-
 
 # Load BPF program
 max_pid = int(open("/proc/sys/kernel/pid_max").read())
