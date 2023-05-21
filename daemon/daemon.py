@@ -24,6 +24,7 @@ b.attach_kretprobe(event="vfs_write", fn_name="vfs_count_exit")
 b.attach_kretprobe(event="vfs_writev", fn_name="vfs_count_exit")
 
 # Send Metadata (Initialize done)
+print("Send Metadata to Aggregator Server... ")
 postData('/', get_metadata())
 
 # Register Signal Handler
@@ -31,9 +32,11 @@ for sig in SIGNALS:
     signal.signal(sig, handle_exit)
 
 # trace until Ctrl-C
-print("Tracing Start...")
+print("Docker Tracing Start...")
 thread = threading.Thread(target=monitor_container_events)
 thread.start()
+
+print("Tracing Start...")
 try:
     sleep(1)
     data_container = {
