@@ -4,18 +4,10 @@ import json
 
 def create_app(test_config = None):
     app = Flask(__name__)
-    
-    #DB config
-    USER = 'axolotl'
-    PASS = 'password'
-    HOST = 'localhost'
-    PORT = 3306
-    DB = 'axolotl_DB'
+    app.config.from_pyfile("config.py")    
 
-    connect_string='mysql+pymysql://{user}:{pw}@{host}:{port}/{db}?charset=utf8mb4'.format(user=USER, pw=PASS, host=HOST, port=PORT, db=DB)
+    database = create_engine(app.config['DB_URL'])
 
-
-    database = create_engine(connect_string) 
     app.database = database 
 
     @app.route('/hw_info')

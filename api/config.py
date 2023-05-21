@@ -1,9 +1,8 @@
-db = {
-    'user':'axolotl',
-    'password':'P@ssw0rd',
-    'host': 'localhost',
-    'port': 3306,
-    'database': 'axolotl_DB'
-}
-DB_URL = f"mysql+mysqlconnector://{db['user']}:{db['password']}@{db['host']}:{db['port']}/{db['database']}?charset=utf8mb4"
+USER = 'axolotl'
+PASS = 'password'
+HOST = 'localhost'
+PORT = 3306
+DB = 'axolotl_DB'
+
+DB_URL='mysql+pymysql://{user}:{pw}@{host}:{port}/{db}?charset=utf8mb4'.format(user=USER, pw=PASS, host=HOST, port=PORT, db=DB)
 
