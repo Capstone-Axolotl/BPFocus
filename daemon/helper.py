@@ -1,10 +1,20 @@
 from config import SERVER_IP, SERVER_PORT, SIGNALS
+from pyroute2 import IPRoute, NetNS
 import requests
 import json
 import threading
 import docker
 import platform
 import psutil
+
+def read(path):
+    with open(path) as f:
+        return f.read()
+
+def readlines(path):
+    with open(path) as f:
+        return [c.rstrip('\n') for c in f.readlines()]
+
 def postData(path='/', data=None) -> None:
     """
     Send json format data to server
@@ -36,16 +46,14 @@ def handle_exit(signal, frame):
     postData('/', data_signal)
 
 ids = {}
+client = docker.from_env()
 def monitor_container_events():
     global ids
-    client = docker.from_env()
     containers = client.containers.list()
     for cnt in containers:
-        ids[cnt.id] = {
-            'name': cnt.name,
-            'image': cnt.image.tags[0]
-        }
-
+        ids[cnt.id]['name'] = cnt.name
+        ids[cnt.id]['image'] = cnt.image.tags[0]
+        
     events = client.events(decode=True)
     for event in events:
         if 'status' in event and 'id' in event:
@@ -53,14 +61,44 @@ def monitor_container_events():
             status = event['status']
             attr = event['Actor']['Attributes']
             if status == 'start':
-                ids[container_id] = {
-                    'name': attr['name'],
-                    'image': attr['image']
-                }
+                ids[container_id]['name'] = attr['name']
+                ids[container_id]['image'] = attr['image']
+                ids[container_id]['status'] = status
+                for container in client.containers.list():
+                    if container_id == container.id:
+                        pid = container.attrs['State']['Pid']
+                        with NetNS(f"/proc/{pid}/ns/net") as ns:
+                            links = ns.get_links()
+                            for link in links:
+                                if link.get_attr('IFLA_IFNAME') == 'eth0':
+                                    index = link.get_attr('IFLA_LINK')
+                                    veth = ip.get_links(index)[0]
+                                    cpu_stat_path = f"/sys/fs/cgroup/cpu,cpuacct/docker/{container_id}/"
+                                    memory_stat_path = f"/sys/fs/cgroup/memory/docker/{container_id}/"
+                                    netns_stat_path = f"/sys/class/net/{veth.get_attr('IFLA_IFNAME')}/statistics/"
+                                    disk_stat_path = f"/sys/fs/cgroup/blkio/docker/{container_id}/"
+                                    container_stat = {
+                                        'id': container_id,
+                                        'paths': {
+                                            'cpu': cpu_stat_path,
+                                            'memory': memory_stat_path,
+                                            'network': netns_stat_path,
+                                            'disk': disk_stat_path
+                                        },
+                                        'prev_usages': {
+                                            'system_cpu_usage': 0,
+                                            'total_cpu_usage': 0,
+                                            'total_disk_usage': 0,
+                                            'total_network_input_usage': 0,
+                                            'total_network_output_usage': 0
+                                        }
+                                    }
+                                    ids[container_id]['stat'] = container_stat
+
                 print(f"[+] Container Started: {container_id}")
                 data_container = {
                     'container': {
-                        'status': status,
+                        'status': 'running',
                         'id': container_id,
                         'information': ids[container_id]
                     }
@@ -77,7 +115,60 @@ def monitor_container_events():
                     }
                 }
                 postData('/', data_container)
-                del ids[container_id]
+                ids[container_id]['status'] = status
+
+HOST_CPU_PATH = "/sys/fs/cgroup/cpu,cpuacct/"
+output_string = read(HOST_CPU_PATH + 'cpuacct.usage_percpu')
+output_list = [int(x) for x in output_string.split()]
+NUMBER_OF_CPUS = sum(1 for x in output_list if x != 0)
+MEMORY_LIMIT = psutil.virtual_memory().total
+def get_running_containers():
+    ip = IPRoute()
+    for container in client.containers.list():
+        container_id = container.id
+        print(f"[*] container id : {container_id}")
+        pid = container.attrs['State']['Pid']
+        with NetNS(f"/proc/{pid}/ns/net") as ns:
+            links = ns.get_links()
+            for link in links:
+                if link.get_attr('IFLA_IFNAME') == 'eth0':
+                    index = link.get_attr('IFLA_LINK')
+                    veth = ip.get_links(index)[0]
+                    cpu_stat_path = f"/sys/fs/cgroup/cpu,cpuacct/docker/{container_id}/"
+                    memory_stat_path = f"/sys/fs/cgroup/memory/docker/{container_id}/"
+                    netns_stat_path = f"/sys/class/net/{veth.get_attr('IFLA_IFNAME')}/statistics/"
+                    disk_stat_path = f"/sys/fs/cgroup/blkio/docker/{container_id}/"
+                    container_stat = {
+                        'id': container_id,
+                        'paths': {
+                            'cpu': cpu_stat_path,
+                            'memory': memory_stat_path,
+                            'network': netns_stat_path,
+                            'disk': disk_stat_path
+                        },
+                        'prev_usages': {
+                            'system_cpu_usage': 0,
+                            'total_cpu_usage': 0,
+                            'total_disk_usage': 0,
+                            'total_network_input_usage': 0,
+                            'total_network_output_usage': 0
+                        }
+                    }
+                    ids[container_id] = {
+                        'name': container.name,
+                        'image': container.image.tags[0],
+                        'status': container.status
+                    }
+                    # print(ids[container_id])
+                    data_container = {
+                        'container': {
+                            'status': 'running',
+                            'id': container_id,
+                            'information': ids[container_id]
+                        }
+                    }
+                    ids[container_id]['stat'] = container_stat
+                    postData('/', data_container)
 
 def get_metadata():
     uname = platform.uname()
