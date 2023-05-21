@@ -173,11 +173,11 @@ def get_running_containers():
 def get_metadata():
     uname = platform.uname()
     kernel_info = {
-        'version': uname.version,
+        'kernel_version': uname.version,
         'os': uname.system,
-        'hostname': uname.node,
-        'release': uname.release,
-        'machine': uname.machine,
+        'kernel_host': uname.node,
+        'kernel_release': uname.release,
+        'kernel_machine': uname.machine,
     }
 
     proc_cpu_info = {}
@@ -191,10 +191,10 @@ def get_metadata():
                 proc_cpu_info[key] = value
 
     cpu_info = {
-        'physical_cores': psutil.cpu_count(logical=False),
-        'total_cores': psutil.cpu_count(logical=True),
-        'vendor_id': proc_cpu_info['vendor_id'],
-        'model_name': proc_cpu_info['model name']
+        'cpu_core': psutil.cpu_count(logical=False),
+        'cpu_tot': psutil.cpu_count(logical=True),
+        'cpu_id': proc_cpu_info['vendor_id'],
+        'cpu_model': proc_cpu_info['model name']
     }
 
     memory = psutil.virtual_memory()
@@ -243,7 +243,7 @@ def get_metadata():
             'kernel': kernel_info, 
             'cpu': cpu_info,
             'memory': {
-                'total': memory.total,
+                'mem_stor': memory.total,
             },
             'network': network_info,
             'disk': disk_info
