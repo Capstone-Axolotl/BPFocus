@@ -41,6 +41,15 @@ def create_app(test_config = None):
         
         return jsonify(js)
 
+    @app.route('/insert_hw', methods=['POST'])
+    def insert_hw():
+        df=request.json
+        
+        with database.connect() as conn:
+            ID=conn.execute(text("""insert into hw_info(os, kernel_version, kernel_host, kernel_release, kernel_arch, cpu_core, cpu_tot, cpu_id, cpu_model, mem_stor) values(:os, :kernel_version, :kernel_host, :kernel_release, :kernel_arch, :cpu_core, :cpu_tot, :cpu_id, :cpu_model, :mem_stor)"""), df).lastrowid
+
+        return jsonify(ID)
+
     @app.route('/get_disk')
     def get_disk():
         with database.connect() as conn:
