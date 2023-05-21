@@ -24,11 +24,13 @@ def postData(path='/', data=None) -> None:
     url = 'http://' + SERVER_IP + ':' + str(SERVER_PORT) + path
     def send_request():
         try:
+            print(json_data)
             response = requests.post(url, headers=headers, data=json_data)
             if response.status_code == 200:
                 print('Data sent successfully')
             else:
                 print('Failed to send data')
+            print(response.text)
         except requests.exceptions.ConnectionError:
             print('[*] Aggregator Server is down')
 
