@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request
 from sqlalchemy import create_engine, text
 import json
+from time import strftime
 
 ID=0
 
@@ -89,6 +90,19 @@ def create_app(test_config = None):
         js=json.dumps(result)
 
         return jsonify(js)
+    
+    @app.route('/insert_perform', methods=["POST"])
+    def insert_perform():
+        global ID
+
+        df=request.json
+        df['time'] = strftime('%Y-%m-%d %H:%M:%S')
+        
+        with database.connect() as conn:
+            ID=conn.execute(text("""insert into perform_info(time, cpu_usg, mem_usg, disk_io, network, id, vfs_io) values(:time, :cpu_usg, :mem_usg, :disk_io, :network, :id, :vfs_io)"""), df)
+            conn.commit()
+    
+        return jsonify(df)
 
     @app.route('/get_perform')
     def get_perform():
