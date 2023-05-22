@@ -67,7 +67,7 @@ def handle_exit(signal, frame):
     """
     Handle signal and send signal number to server
     """
-    print(f"시그널 {signal} 수신, 프로그램 종료")
+    print(f"[x] Signal {signal} received")
     data_signal = {'exception': {
         'signal': signal
     }}
