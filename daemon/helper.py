@@ -15,16 +15,35 @@ def readlines(path):
     with open(path) as f:
         return [c.rstrip('\n') for c in f.readlines()]
 
+def post_host_metadata(path='/', data=None) -> None:
+    myid = -1
+
+    headers = {'Content-Type': 'application/json'}
+    json_data = json.dumps(data)
+    url = 'http://' + SERVER_IP + ':' + str(SERVER_PORT) + path
+    try:
+        response = requests.post(url, headers=headers, data=json_data)
+        if response.status_code == 200:
+            print('Data sent successfully')
+            myid = int(response.text)
+        else:
+            print('Failed to send data')
+    except requests.exceptions.ConnectionError:
+        print('[*] Aggregator Server is down')
+
+    return myid
+
 def postData(path='/', data=None) -> None:
     """
     Send json format data to server
     """
+    global ID
+
     headers = {'Content-Type': 'application/json'}
     json_data = json.dumps(data)
     url = 'http://' + SERVER_IP + ':' + str(SERVER_PORT) + path
     def send_request():
         try:
-            print(json_data)
             response = requests.post(url, headers=headers, data=json_data)
             if response.status_code == 200:
                 print('Data sent successfully')
@@ -174,13 +193,6 @@ def get_running_containers():
 
 def get_metadata():
     uname = platform.uname()
-    kernel_info = {
-        'kernel_version': uname.version,
-        'os': uname.system,
-        'kernel_host': uname.node,
-        'kernel_release': uname.release,
-        'kernel_machine': uname.machine,
-    }
 
     proc_cpu_info = {}
     with open('/proc/cpuinfo', 'r') as f:
@@ -192,16 +204,21 @@ def get_metadata():
                 value = info[1].strip()
                 proc_cpu_info[key] = value
 
-    cpu_info = {
+    memory = psutil.virtual_memory()
+    kernel_info = {
+        'kernel_version': uname.version,
+        'os': uname.system,
+        'kernel_host': uname.node,
+        'kernel_release': uname.release,
+        'kernel_arch': uname.machine,
         'cpu_core': psutil.cpu_count(logical=False),
         'cpu_tot': psutil.cpu_count(logical=True),
         'cpu_id': proc_cpu_info['vendor_id'],
-        'cpu_model': proc_cpu_info['model name']
+        'cpu_model': proc_cpu_info['model name'],
+        'mem_stor': memory.total
     }
 
-    memory = psutil.virtual_memory()
     net_if_addrs = psutil.net_if_addrs()
-
     network_info = []
     net_info = {}
     for interface, addresses in net_if_addrs.items():
@@ -209,19 +226,20 @@ def get_metadata():
         for address in addresses:
             net_info[interface].append({
                 'family': address.family.name,
-                'address': address.address,
+                'addr': address.address,
                 'netmask': address.netmask,
                 'broadcast': address.broadcast
             })
+    
 
     for interface, addresses in net_info.items():
         interface_info = {
             'name': interface,
-            'address': addresses[0]['address'],
+            'addr': addresses[0]['addr'],
             'netmask': addresses[0]['netmask']
         }
         if addresses[0]['family'] == 'AF_INET6':
-            interface_info['address'] = addresses[0]['address'][:-len(interface) - 1]
+            interface_info['addr'] = addresses[0]['addr'][:-len(interface) - 1]
         network_info.append(interface_info)
 
     partitions = psutil.disk_partitions()
@@ -236,19 +254,12 @@ def get_metadata():
                     'total': disk_usage.total,
                     'used': disk_usage.used,
                     'free': disk_usage.free,
-                    'percent': disk_usage.percent
                 })
 
     metadata = {
-        'system_metadata': {
-            'uptime': psutil.boot_time(),
-            'kernel': kernel_info, 
-            'cpu': cpu_info,
-            'memory': {
-                'mem_stor': memory.total,
-            },
-            'network': network_info,
-            'disk': disk_info
-        }
+            'kernel_info': kernel_info,
+            'network_info': network_info,
+            'disk_info': disk_info
     }
+    
     return metadata

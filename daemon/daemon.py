@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from bcc import BPF
-from time import sleep
+from time import sleep, strftime
 from config import *
 from helper import *
 import datetime
@@ -24,14 +24,18 @@ b.attach_kretprobe(event="vfs_write", fn_name="vfs_count_exit")
 b.attach_kretprobe(event="vfs_writev", fn_name="vfs_count_exit")
 
 # Send Metadata (Initialize done)
+myid = 13
+'''
 print("Send Metadata to Aggregator Server... ")
-postData('/insert_hw', get_metadata())
+myid = post_host_metadata('/insert_hw', get_metadata())
+print(f"[*] Get ID from Aggregator Server : {myid}")
 
 # trace until Ctrl-C
 print("Docker Tracing Start...")
 get_running_containers()
 thread = threading.Thread(target=monitor_container_events)
 thread.start()
+'''
 
 # Register Signal Handler
 for sig in SIGNALS:
@@ -40,12 +44,15 @@ for sig in SIGNALS:
 print("Tracing Start...")
 try:
     sleep(1)
+    '''
     data_container = {
         'container_init': []
     }
     for id in ids:
         data_container['container_init'].append({id: ids[id]})
     postData('/', data_container)
+    '''
+
     while True:
         sleep(0.5)
         mymap = b.get_table("mymap")
@@ -67,17 +74,17 @@ try:
         print(f"[*] Physical I/O : {physical_iosize}")
         print()
         data_performance = {
-            'performance': {
-                'cpu': cpu_percent,
-                'memory': memory_percent,
-                'disk_io': physical_iosize,
-                'vfs_io': logical_iosize,
-                'network': network_traffic
-            }
+            'id': myid,
+            'cpu_usg': cpu_percent,
+            'mem_usg': memory_percent,
+            'disk_io': physical_iosize,
+            'vfs_io': logical_iosize,
+            'network': network_traffic
         }
-
-        postData('/', data_performance)
-
+        
+        postData('/insert_perform', data_performance)
+        
+        '''
         for id in ids:
             if ids[id]['status'] != 'running':
                 continue
@@ -150,6 +157,7 @@ try:
             prev_usages['total_disk_usage'] = blkio_total_usage
             prev_usages['total_network_input_usage'] = net_output_bytes
             prev_usages['total_network_output_usage'] = net_input_bytes 
+        '''
 
 except KeyboardInterrupt:
     data_down = {
