@@ -16,8 +16,7 @@ def readlines(path):
     with open(path) as f:
         return [c.rstrip('\n') for c in f.readlines()]
 
-def post_data_sync(path='/', data=None, host_id=None, container_id=None, method='POST') -> None:
-    print(1)
+def post_data_sync(path='/', data=None, host_id=None, container_id=None, method='POST', option=None) -> None:
     headers = {'Content-Type': 'application/json'}
     if host_id != None:
         data['id'] = host_id
@@ -28,15 +27,19 @@ def post_data_sync(path='/', data=None, host_id=None, container_id=None, method=
     try:
         print(f"[*] post_data_sync : {json.dumps(json_data)}")
         response = requests.request(method, url, headers=headers, data=json_data)
+
         if response.status_code == 200:
             print('Data sent successfully')
         else:
             print('Failed to send data')
         print(response.text)
+        if option:
+            host_id = int(response.text)
+            return host_id
     except requests.exceptions.ConnectionError:
         print('[*] Aggregator Server is down')
 
-    return host_id
+    return response.text
 
 def post_data_async(path='/', data=None, host_id=None, container_id=None, method='POST') -> None:
     """

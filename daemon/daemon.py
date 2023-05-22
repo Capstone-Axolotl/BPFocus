@@ -24,10 +24,19 @@ b.attach_kretprobe(event="vfs_write", fn_name="vfs_count_exit")
 b.attach_kretprobe(event="vfs_writev", fn_name="vfs_count_exit")
 
 # Send Metadata (Initialize done)
-host_id = 13
-print("Send Metadata to Aggregator Server... ")
-host_id = post_data_sync('/insert_hw', get_metadata())
-print(f"[*] Get ID from Aggregator Server : {host_id}")
+if HOST_ID:
+    host_id = int(HOST_ID)
+else:
+    print("Send Metadata to Aggregator Server... ")
+    host_id = post_data_sync('/insert_hw', get_metadata())
+    with open(CONFIG_PATH, 'r') as f:
+        data = f.read().split()
+
+    with open(CONFIG_PATH, 'w') as f:
+        f.write(f"{data[0]} {data[1]} {host_id}")
+
+print(f"[*] ID: {host_id}")
+post_data_async('/update_health', {}, host_id)
 
 # trace until Ctrl-C
 print("Docker Tracing Start...")
@@ -38,7 +47,6 @@ thread.start()
 # Register Signal Handler
 for sig in SIGNALS:
     signal.signal(sig, handle_exit)
-
 
 print("Tracing Start...")
 try:
@@ -63,7 +71,6 @@ try:
         print(f"[*] Physical I/O : {physical_iosize}")
         print()
         data_performance = {
-            'id': host_id,
             'cpu_usg': cpu_percent,
             'mem_usg': memory_percent,
             'disk_io': physical_iosize,
@@ -120,9 +127,7 @@ try:
                 print(f"[*] system_cpu_delta : {system_cpu_delta}")
                 print(f"[*] CPU percent : {cpu_percent}%")
                 data_con_performance['cpu'] = cpu_percent
-            
-            # print(f"[*] memory_usage : {memory_usage / 1024 ** 2}")
-            # print(used_memory / 1024 ** 2)
+
             print(f"[*] Memory percent : {memory_percent}%")
             data_con_performance['memory'] = memory_percent
 
@@ -149,7 +154,4 @@ try:
             prev_usages['total_network_output_usage'] = net_input_bytes 
 
 except KeyboardInterrupt:
-    data_down = {
-        'exception': 'KeyboardInterrupt' # 정상 종료
-    }
-    post_data_async('/', data_down, host_id)
+    pass

@@ -3,9 +3,15 @@ FILE = "daemon.c"
 CONFIG_PATH = os.path.expanduser('~/.axolotl_config')
 SERVER_IP = ''
 SERVER_PORT = ''
+HOST_ID = False
 if os.path.exists(CONFIG_PATH):
     with open(CONFIG_PATH, 'r') as f:
-        SERVER_IP, SERVER_PORT = f.read().split()
+        data = f.read().split()
+    SERVER_IP = data[0]
+    SERVER_PORT = data[1]
+    if len(data) == 3:
+        HOST_ID = int(data[2])
+
 else:
     SERVER_IP = input("IP of Aggregator Server: ")
     SERVER_PORT = input("PORT of Aggregator Server: ")
