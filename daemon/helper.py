@@ -16,35 +16,41 @@ def readlines(path):
     with open(path) as f:
         return [c.rstrip('\n') for c in f.readlines()]
 
-def post_host_metadata(path='/', data=None) -> None:
-    myid = -1
-
+def post_data_sync(path='/', data=None, host_id=None, container_id=None) -> None:
     headers = {'Content-Type': 'application/json'}
+    if host_id != None:
+        data['id'] = host_id
+    if container_id != None:
+        data['container_id'] = container_id
     json_data = json.dumps(data)
     url = 'http://' + SERVER_IP + ':' + str(SERVER_PORT) + path
     try:
+        print(f"[*] post_data_sync : {json.dumps(json_data)}")
         response = requests.post(url, headers=headers, data=json_data)
         if response.status_code == 200:
             print('Data sent successfully')
-            myid = int(response.text)
+            host_id = int(response.text)
         else:
             print('Failed to send data')
     except requests.exceptions.ConnectionError:
         print('[*] Aggregator Server is down')
 
-    return myid
+    return host_id
 
-def postData(path='/', data=None, myid=None) -> None:
+def post_data_async(path='/', data=None, host_id=None, container_id=None) -> None:
     """
     Send json format data to server
     """
     headers = {'Content-Type': 'application/json'}
-    data['id'] = myid
+    if host_id != None:
+        data['id'] = host_id
+    if container_id != None:
+        data['container_id'] = container_id
     json_data = json.dumps(data)
     url = 'http://' + SERVER_IP + ':' + str(SERVER_PORT) + path
     def send_request():
         try:
-            print(f"[*] postData : {json.dumps(json_data)}")
+            print(f"[*] post_data_async : {json.dumps(json_data)}")
             response = requests.post(url, headers=headers, data=json_data)
             if response.status_code == 200:
                 print('Data sent successfully')
@@ -65,7 +71,7 @@ def handle_exit(signal, frame):
     data_signal = {'exception': {
         'signal': signal
     }}
-    postData('/', data_signal)
+    post_data_async('/', data_signal)
 
 def get_container_info(cid):
     docker_info = {}
@@ -114,7 +120,7 @@ def get_container_stat(cid, vethi):
 
 ids = {}
 client = docker.from_env()
-def monitor_container_events(myid):
+def monitor_container_events(host_id):
     global ids
     ip = IPRoute()
     events = client.events(decode=True)
@@ -135,7 +141,7 @@ def monitor_container_events(myid):
                             if link.get_attr('IFLA_IFNAME') == 'eth0':
                                 index = link.get_attr('IFLA_LINK')
                                 veth = ip.get_links(index)[0]
-                                ids[container_id] = {
+                                ids[container.short_id] = {
                                     'status': 'running',
                                     'stat': get_container_stat(container_id, veth.get_attr('IFLA_IFNAME'))
                                 }
@@ -146,7 +152,7 @@ def monitor_container_events(myid):
                     continue
 
                 print(f"[+] Container Started: {container_id}")
-                postData('/', get_container_info(container_id), myid)
+                post_data_async('/', get_container_info(container_id), host_id)
             
             # 컨테이너가 종료된 경우
             if status == 'die':
@@ -156,7 +162,7 @@ def monitor_container_events(myid):
                     continue
 
                 # PUT(수정) METHOD 지원 필요
-                postData('/', get_container_info(container_id), myid)
+                post_data_async('/', get_container_info(container_id), host_id)
                 ids[container_id]['status'] = status
 
 HOST_CPU_PATH = "/sys/fs/cgroup/cpu,cpuacct/"
@@ -164,7 +170,7 @@ output_string = read(HOST_CPU_PATH + 'cpuacct.usage_percpu')
 output_list = [int(x) for x in output_string.split()]
 NUMBER_OF_CPUS = sum(1 for x in output_list if x != 0)
 MEMORY_LIMIT = psutil.virtual_memory().total
-def get_running_containers(myid):
+def get_running_containers(host_id):
     ip = IPRoute()
     for container in client.containers.list():
         container_id = container.id
@@ -177,12 +183,13 @@ def get_running_containers(myid):
                 if link.get_attr('IFLA_IFNAME') == 'eth0':
                     index = link.get_attr('IFLA_LINK')
                     veth = ip.get_links(index)[0]
-                    ids[container_id] = {
+                    print(ids)
+                    ids[container.short_id] = {
                         'status': container.status,
                         'stat': get_container_stat(container_id, veth.get_attr('IFLA_IFNAME'))
                     }
                     # print(ids[container_id])
-                    postData('/', get_container_info(container_id), myid)
+                    post_data_sync('/', get_container_info(container_id), host_id)
 
 def get_metadata():
     uname = platform.uname()
