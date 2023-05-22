@@ -1,8 +1,12 @@
-from time import strftime
+from sqlalchemy import text
 
-df=(12, 13, 14)
-health_time=strftime('%Y-%m-%d %H:%M:%S')
-print(health_time)
+df={}
 
-for i in df:
-    print(("update health_check set off_time='{}' where id='{}'").format(health_time, i))
+df['one']=100
+df['two']=5678
+
+df['one']=df['one']/256*100
+
+string=(text("""update :one, :two"""), df)
+
+print(string)

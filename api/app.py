@@ -5,6 +5,11 @@ import os
 from time import strftime
 
 ID=0
+CPU_MAX=0
+DISK_MAX=0
+NET_MAX=0
+VFS_MAX=0
+
 def create_app(test_config = None):
     app = Flask(__name__)
     app.config.from_pyfile("config.py")    
@@ -108,6 +113,11 @@ def create_app(test_config = None):
     def insert_perform():
         df=request.json
         df['time'] = strftime('%Y-%m-%d %H:%M:%S')
+        df['cpu_usg']=df['cpu_usg']/CPU_MAX*100
+        df['disk_io']=df['disk_io']/DISK_MAX*100
+        df['network']=df['network']/NET_MAX*100
+        df['vfs_io']=df['vfs_io']/VFS_MAX*100
+
         with database.connect() as conn:
             conn.execute(text("""insert into perform_info(time, cpu_usg, mem_usg, disk_io, network, id, vfs_io) values(:time, :cpu_usg, :mem_usg, :disk_io, :network, :id, :vfs_io)"""), df)
             conn.commit()
@@ -145,6 +155,11 @@ def create_app(test_config = None):
         if request.method=="POST":
             df=request.json
 
+            df['cpu']=df['cpu']/CPU_MAX*100
+            df['disk_io']=df['disk_io']/DISK_MAX*100
+            df['network_input']=df['network_input']/NET_MAX*100
+            df['network_output']=df['network_output']/NET_MAX*100
+            
             with database.connect() as conn:
                 conn.execute(text("""insert into container_perform_info(cpu, memory, disk_io, network_input, network_output, id, container_id) values (:cpu, :memory, :disk_io, :network_input, :network_output, :id, :container_id)"""), df)
                 conn.commit()
@@ -165,7 +180,7 @@ def create_app(test_config = None):
     def container():
         if request.method=="POST":
             df=request.json
-
+            
             with database.connect() as conn:
                 conn.execute(text("""insert into container_info(name, container_id, status, image_tag, command, networks, ip, ports, created, id) values(:name, :container_id, :status, :image_tag, :command, :networks, :ip, :ports, :created, :id)"""), df)
                 conn.commit()
@@ -190,9 +205,6 @@ def create_app(test_config = None):
 
             return jsonify(js)
 
-
-
-            
         
     return app
 
