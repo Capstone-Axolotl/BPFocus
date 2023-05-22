@@ -114,6 +114,29 @@ def create_app(test_config = None):
 
         return jsonify(js)
 
+    @app.route('/container', methods=["POST", "GET", "PUT", "HEAD"])
+    def container():
+
+        if request.methods=="POST":
+            df=request.json
+
+            with database.connect() as conn:
+                conn.execute(text("""insert into container_info(name, container_id, status, image_tag, command, networks, ip, ports, created, id) values(:name, :container_id, :status, :image_tag, :command, :networks, :ip, :ports, :created, :id)"""), df)
+                conn.commit()
+
+            return jsonify(df)
+
+        elif request.methods=="PUT":
+            df=request.json
+
+            with database.connect() as conn:
+                conn.execute(text("""update container_info set status="""), df)
+            
+            return jsonify(df['status'])
+
+            
+
+
         
     return app
 
