@@ -117,7 +117,7 @@ def create_app(test_config = None):
         
     @app.route('/container_perform', methods=["POST", "GET"])
     def container_perform():
-        if request.method="POST":
+        if request.method=="POST":
             df=request.json
 
             with database.connect() as conn:
