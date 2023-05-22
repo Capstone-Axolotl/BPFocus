@@ -114,10 +114,31 @@ def create_app(test_config = None):
 
         return jsonify(js)
 
-    @app.route('/container', methods=["POST", "GET", "PUT", "HEAD"])
-    def container():
+        
+    @app.route('/container_perform', methods=["POST", "GET"])
+    def container_perform():
+        if request.method="POST":
+            df=request.json
 
-        if request.methods=="POST":
+            with database.connect() as conn:
+                conn.execute(text("""insert into container_perform_info(cpu, memory, disk_io, network_input, network_output, id, container_id) values (:cpu, :memory, :disk_io, :network_input, :network_output, :id, :container_id)"""), df)
+                conn.commit()
+
+            return jsonify(df)
+
+        else:
+            with database.connect() as conn:
+                result = conn.execute(text("""select * from container_perform_info""")).fetchall()
+
+                result=[list(row) for row in result]
+                js=json.dumps(result)
+
+            return jsonify(js)
+
+
+    @app.route('/container', methods=["POST", "GET", "DELETE"])
+    def container():
+        if request.method=="POST":
             df=request.json
 
             with database.connect() as conn:
@@ -126,17 +147,27 @@ def create_app(test_config = None):
 
             return jsonify(df)
 
-        elif request.methods=="PUT":
-            df=request.json
+        elif request.method=="DELETE":
+            df=request.json['container_id']
 
             with database.connect() as conn:
-                conn.execute(text("""update container_info set status="""), df)
-            
-            return jsonify(df['status'])
+                conn.execute(text("""delete from  container_info where container_id='{}'""".format(df)))
+                conn.commit()
+
+            return jsonify(df)
+        
+        else:
+            with database.connect() as conn:
+                result = conn.execute(text("""SELECT * FROM container_info; """)).fetchall()
+
+            result=[list(row) for row in result]
+            js=json.dumps(result)
+
+            return jsonify(js)
+
+
 
             
-
-
         
     return app
 
