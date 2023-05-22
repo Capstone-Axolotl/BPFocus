@@ -16,7 +16,8 @@ def readlines(path):
     with open(path) as f:
         return [c.rstrip('\n') for c in f.readlines()]
 
-def post_data_sync(path='/', data=None, host_id=None, container_id=None) -> None:
+def post_data_sync(path='/', data=None, host_id=None, container_id=None, method='POST') -> None:
+    print(1)
     headers = {'Content-Type': 'application/json'}
     if host_id != None:
         data['id'] = host_id
@@ -26,18 +27,18 @@ def post_data_sync(path='/', data=None, host_id=None, container_id=None) -> None
     url = 'http://' + SERVER_IP + ':' + str(SERVER_PORT) + path
     try:
         print(f"[*] post_data_sync : {json.dumps(json_data)}")
-        response = requests.post(url, headers=headers, data=json_data)
+        response = requests.request(method, url, headers=headers, data=json_data)
         if response.status_code == 200:
             print('Data sent successfully')
-            host_id = int(response.text)
         else:
             print('Failed to send data')
+        print(response.text)
     except requests.exceptions.ConnectionError:
         print('[*] Aggregator Server is down')
 
     return host_id
 
-def post_data_async(path='/', data=None, host_id=None, container_id=None) -> None:
+def post_data_async(path='/', data=None, host_id=None, container_id=None, method='POST') -> None:
     """
     Send json format data to server
     """
@@ -51,7 +52,7 @@ def post_data_async(path='/', data=None, host_id=None, container_id=None) -> Non
     def send_request():
         try:
             print(f"[*] post_data_async : {json.dumps(json_data)}")
-            response = requests.post(url, headers=headers, data=json_data)
+            response = requests.request(method, url, headers=headers, data=json_data)
             if response.status_code == 200:
                 print('Data sent successfully')
             else:
@@ -128,10 +129,11 @@ def monitor_container_events(host_id):
         if 'status' in event and 'id' in event:
             container_id = event['id']
             status = event['status']
+            container = client.containers.get(container_id)
+            container_id = container.short_id
 
             # 컨테이너가 새로 생성된 경우
             if status == 'start':
-                container = client.containers.get(container_id)
                 pid = container.attrs['State']['Pid']
                 # 호스트의 veth* 네트워크 인터페이스와 대응되는 인터페이스 저장
                 try:
@@ -152,17 +154,18 @@ def monitor_container_events(host_id):
                     continue
 
                 print(f"[+] Container Started: {container_id}")
-                post_data_async('/', get_container_info(container_id), host_id)
+                post_data_async('/container', get_container_info(container_id), host_id)
             
             # 컨테이너가 종료된 경우
             if status == 'die':
                 print(f"[-] Container Died: {container_id}")
                 if ids[container_id] == 'exited':
+                    print(f"[*] Container exited from start")
                     del ids[container_id]
                     continue
 
                 # PUT(수정) METHOD 지원 필요
-                post_data_async('/', get_container_info(container_id), host_id)
+                post_data_async('/container', get_container_info(container_id), host_id, method='DELETE')
                 ids[container_id]['status'] = status
 
 HOST_CPU_PATH = "/sys/fs/cgroup/cpu,cpuacct/"
@@ -189,7 +192,7 @@ def get_running_containers(host_id):
                         'stat': get_container_stat(container_id, veth.get_attr('IFLA_IFNAME'))
                     }
                     # print(ids[container_id])
-                    post_data_sync('/', get_container_info(container_id), host_id)
+                    post_data_sync('/container', get_container_info(container_id), host_id)
 
 def get_metadata():
     uname = platform.uname()

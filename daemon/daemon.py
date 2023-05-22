@@ -25,11 +25,9 @@ b.attach_kretprobe(event="vfs_writev", fn_name="vfs_count_exit")
 
 # Send Metadata (Initialize done)
 host_id = 13
-'''
 print("Send Metadata to Aggregator Server... ")
 host_id = post_data_sync('/insert_hw', get_metadata())
 print(f"[*] Get ID from Aggregator Server : {host_id}")
-'''
 
 # trace until Ctrl-C
 print("Docker Tracing Start...")
@@ -40,6 +38,7 @@ thread.start()
 # Register Signal Handler
 for sig in SIGNALS:
     signal.signal(sig, handle_exit)
+
 
 print("Tracing Start...")
 try:
@@ -142,7 +141,7 @@ try:
                 
             print()
         
-            post_data_async('/', data_con_performance, host_id, cid)
+            post_data_async('/container_perform', data_con_performance, host_id, cid)
             prev_usages['system_cpu_usage'] = system_cpu_usage
             prev_usages['total_cpu_usage'] = total_cpu_usage
             prev_usages['total_disk_usage'] = blkio_total_usage
