@@ -5,7 +5,6 @@ import os
 from time import strftime
 
 ID=0
-health_check_host = {}
 def create_app(test_config = None):
     app = Flask(__name__)
     app.config.from_pyfile("config.py")    
@@ -22,8 +21,6 @@ def create_app(test_config = None):
             ID=conn.execute(text("""insert into user_info(name, email, gen_date, id) """), df)
             conn.commit()
         
-
-
 
     @app.route('/get_user')
     def get_user():
@@ -45,6 +42,17 @@ def create_app(test_config = None):
 
         return jsonify(js)
 
+    @app.route('/update_health', methods=["POST"])
+    def update_health():
+        df=request.json['id']
+
+        with database.connect() as conn:
+            conn.execute(text("""update health_check set status='running' where id='{}'""".format(df)))
+            conn.commit()
+
+        return jsonify(df)
+
+        
 
     @app.route('/get_hw')
     def get_hw():
@@ -78,10 +86,11 @@ def create_app(test_config = None):
                 p['id'] = ID
                 conn.execute(text("""insert into disk_info(device, mountpoint, fstype, total, used, free, id) values(:device, :mountpoint, :fstype, :total, :used, :free, :id)"""), p)
                 conn.commit()
-
-            health_df['on_time']=strftime('%Y-%m-%d %H:%M:%S')
+            health_df={} 
+            health_df['status']="running"
             health_df['id']=ID
-            conn.execute(text("""insert into health_check(on_time, id) values (:on_time, :id)"""), health_df)
+            conn.execute(text("""insert into health_check(status, id) values (:status, :id)"""), health_df)
+            conn.commit()
 
         return jsonify(ID)
 
@@ -103,16 +112,21 @@ def create_app(test_config = None):
             conn.execute(text("""insert into perform_info(time, cpu_usg, mem_usg, disk_io, network, id, vfs_io) values(:time, :cpu_usg, :mem_usg, :disk_io, :network, :id, :vfs_io)"""), df)
             conn.commit()
 
-            health_update=strftime('%Y-%m-%d %H:%M:%S')
+            health_time=df['time']
             health_id=df['id']
 
-            conn.execute(text("""update health_check set last_update='{}' where id='{}'""").format(health_update, health_id))
+            conn.execute(text("""update health_check set last_update='{}' where id='{}'""".format(health_time, health_id)))
             conn.commit()
 
-            health_df=conn.execute(text("""select id from perform_info where time<date_sub(now(), interval 1 minute) group by id;""")).fetchall()
+            health_df=conn.execute(text("""select id from health_check where status='running' and last_update<date_sub(now(), interval 1 minute) group by id;""")).fetchall()
 
-    
-        return jsonify(df)
+            result=[list(row) for row in health_df]
+            for i in result:
+                conn.execute(text("""update health_check set status='disabled' where id={}""".format(int(i[0]))))
+                conn.commit()
+
+
+        return jsonify(result)
 
     @app.route('/get_perform')
     def get_perform():
