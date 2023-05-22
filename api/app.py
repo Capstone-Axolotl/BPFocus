@@ -1,6 +1,9 @@
 from flask import Flask, jsonify, request
 from sqlalchemy import create_engine, text
 import json
+from time import strftime
+
+ID=0
 
 def create_app(test_config = None):
     app = Flask(__name__)
@@ -9,6 +12,16 @@ def create_app(test_config = None):
     database = create_engine(app.config['DB_URL'])
 
     app.database = database 
+
+    @app.route('/insert_user')
+    def insert_user():
+        df=request.json
+        
+        with database.connect() as conn:
+            ID=conn.execute(text("""insert into user_info(name, email, gen_date, id) """), df)
+            conn.commit()
+
+
 
     @app.route('/get_user')
     def get_user():
@@ -43,10 +56,28 @@ def create_app(test_config = None):
 
     @app.route('/insert_hw', methods=['POST'])
     def insert_hw():
+        global ID
+
         df=request.json
-        
+      
+        kernel = df['kernel_info']
         with database.connect() as conn:
-            ID=conn.execute(text("""insert into hw_info(os, kernel_version, kernel_host, kernel_release, kernel_arch, cpu_core, cpu_tot, cpu_id, cpu_model, mem_stor) values(:os, :kernel_version, :kernel_host, :kernel_release, :kernel_arch, :cpu_core, :cpu_tot, :cpu_id, :cpu_model, :mem_stor)"""), df).lastrowid
+            ID=conn.execute(text("""insert into hw_info(os, kernel_version, kernel_host, kernel_release, kernel_arch, cpu_core, cpu_tot, cpu_id, cpu_model, mem_stor) values(:os, :kernel_version, :kernel_host, :kernel_release, :kernel_arch, :cpu_core, :cpu_tot, :cpu_id, :cpu_model, :mem_stor)"""), kernel).lastrowid
+            conn.commit()
+        
+        networks=df['network_info']
+        with database.connect() as conn:
+            for n in networks:
+                n['id'] = ID
+                conn.execute(text("""insert into network_info(name, addr, netmask, id) values(:name, :addr, :netmask, :id)"""), n)
+                conn.commit()
+
+        disks=df['disk_info']
+        with database.connect() as conn:
+            for p in disks:
+                p['id'] = ID
+                conn.execute(text("""insert into disk_info(device, mountpoint, fstype, total, used, free, id) values(:device, :mountpoint, :fstype, :total, :used, :free, :id)"""), p)
+                conn.commit()
 
         return jsonify(ID)
 
@@ -59,6 +90,19 @@ def create_app(test_config = None):
         js=json.dumps(result)
 
         return jsonify(js)
+    
+    @app.route('/insert_perform', methods=["POST"])
+    def insert_perform():
+        global ID
+
+        df=request.json
+        df['time'] = strftime('%Y-%m-%d %H:%M:%S')
+        
+        with database.connect() as conn:
+            ID=conn.execute(text("""insert into perform_info(time, cpu_usg, mem_usg, disk_io, network, id, vfs_io) values(:time, :cpu_usg, :mem_usg, :disk_io, :network, :id, :vfs_io)"""), df)
+            conn.commit()
+    
+        return jsonify(df)
 
     @app.route('/get_perform')
     def get_perform():
