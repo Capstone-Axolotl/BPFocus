@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from bcc import BPF
-from time import sleep
+from time import sleep, strftime
 from config import *
 from helper import *
 import datetime
@@ -24,13 +24,17 @@ b.attach_kretprobe(event="vfs_write", fn_name="vfs_count_exit")
 b.attach_kretprobe(event="vfs_writev", fn_name="vfs_count_exit")
 
 # Send Metadata (Initialize done)
+host_id = 13
+'''
 print("Send Metadata to Aggregator Server... ")
-postData('/insert_hw', get_metadata())
+host_id = post_data_sync('/insert_hw', get_metadata())
+print(f"[*] Get ID from Aggregator Server : {host_id}")
+'''
 
 # trace until Ctrl-C
 print("Docker Tracing Start...")
-get_running_containers()
-thread = threading.Thread(target=monitor_container_events)
+get_running_containers(host_id)
+thread = threading.Thread(target=monitor_container_events, args=[host_id])
 thread.start()
 
 # Register Signal Handler
@@ -39,13 +43,6 @@ for sig in SIGNALS:
 
 print("Tracing Start...")
 try:
-    sleep(1)
-    data_container = {
-        'container_init': []
-    }
-    for id in ids:
-        data_container['container_init'].append({id: ids[id]})
-    postData('/', data_container)
     while True:
         sleep(0.5)
         mymap = b.get_table("mymap")
@@ -67,23 +64,21 @@ try:
         print(f"[*] Physical I/O : {physical_iosize}")
         print()
         data_performance = {
-            'performance': {
-                'cpu': cpu_percent,
-                'memory': memory_percent,
-                'disk_io': physical_iosize,
-                'vfs_io': logical_iosize,
-                'network': network_traffic
-            }
+            'id': host_id,
+            'cpu_usg': cpu_percent,
+            'mem_usg': memory_percent,
+            'disk_io': physical_iosize,
+            'vfs_io': logical_iosize,
+            'network': network_traffic
         }
+        post_data_async('/insert_perform', data_performance, host_id)
 
-        postData('/', data_performance)
-
-        for id in ids:
-            if ids[id]['status'] != 'running':
+        for cid in ids:
+            if ids[cid]['status'] != 'running':
                 continue
             system_cpu_usage = int(read(HOST_CPU_PATH + 'cpuacct.usage'))
-            container_stat_path = ids[id]['stat']['paths']
-            prev_usages = ids[id]['stat']['prev_usages']
+            container_stat_path = ids[cid]['stat']['paths']
+            prev_usages = ids[cid]['stat']['prev_usages']
             prev_system_cpu_usage = prev_usages['system_cpu_usage']
             prev_total_cpu_usage = prev_usages['total_cpu_usage']
             prev_total_disk_usage = prev_usages['total_disk_usage']
@@ -111,9 +106,12 @@ try:
             net_input_bytes = int(read(netns_stat_path + 'rx_bytes'))
             net_output_bytes = int(read(netns_stat_path + 'tx_bytes'))
 
-            print(f"[=] Container Id : {id}")
-            data_performance = {
-                'container_performance': {}
+            print(f"[=] Container Id : {cid}")
+            data_con_performance = {
+                'cpu': 0,
+                'disk_io': 0,
+                'network_input': 0,
+                'network_output': 0
             }
             if prev_total_cpu_usage != 0:
                 cpu_delta = total_cpu_usage - prev_total_cpu_usage
@@ -122,29 +120,29 @@ try:
                 print(f"[*] cpu_delta : {cpu_delta}")
                 print(f"[*] system_cpu_delta : {system_cpu_delta}")
                 print(f"[*] CPU percent : {cpu_percent}%")
-                data_performance['container_performance']['cpu'] = cpu_percent
+                data_con_performance['cpu'] = cpu_percent
             
             # print(f"[*] memory_usage : {memory_usage / 1024 ** 2}")
             # print(used_memory / 1024 ** 2)
             print(f"[*] Memory percent : {memory_percent}%")
-            data_performance['container_performance']['memory'] = memory_percent
+            data_con_performance['memory'] = memory_percent
 
             if prev_total_disk_usage != 0:
                 disk_usage = blkio_total_usage - prev_total_disk_usage
                 print(f"[*] Disk Usage : {disk_usage}")
-                data_performance['container_performance']['disk_io'] = disk_usage
+                data_con_performance['disk_io'] = disk_usage
 
             if prev_total_network_output_usage != 0 or prev_total_network_input_usage != 0:
                 network_input_usage = net_output_bytes - prev_total_network_output_usage
                 network_output_usage = net_input_bytes - prev_total_network_input_usage
                 print(f"[*] Network Input Usage : {network_input_usage}B")
                 print(f"[*] Network Output Usage : {network_output_usage}B")
-                data_performance['container_performance']['network_input'] = network_input_usage
-                data_performance['container_performance']['network_output'] = network_output_usage
+                data_con_performance['network_input'] = network_input_usage
+                data_con_performance['network_output'] = network_output_usage
                 
             print()
         
-            postData('/', data_performance)
+            post_data_async('/', data_con_performance, host_id, cid)
             prev_usages['system_cpu_usage'] = system_cpu_usage
             prev_usages['total_cpu_usage'] = total_cpu_usage
             prev_usages['total_disk_usage'] = blkio_total_usage
@@ -155,4 +153,4 @@ except KeyboardInterrupt:
     data_down = {
         'exception': 'KeyboardInterrupt' # 정상 종료
     }
-    postData('/', data_down)
+    post_data_async('/', data_down, host_id)
