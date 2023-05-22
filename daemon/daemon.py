@@ -29,13 +29,12 @@ myid = 13
 print("Send Metadata to Aggregator Server... ")
 myid = post_host_metadata('/insert_hw', get_metadata())
 print(f"[*] Get ID from Aggregator Server : {myid}")
-
+'''
 # trace until Ctrl-C
 print("Docker Tracing Start...")
-get_running_containers()
-thread = threading.Thread(target=monitor_container_events)
+get_running_containers(myid)
+thread = threading.Thread(target=monitor_container_events, args=[myid])
 thread.start()
-'''
 
 # Register Signal Handler
 for sig in SIGNALS:
@@ -44,15 +43,6 @@ for sig in SIGNALS:
 print("Tracing Start...")
 try:
     sleep(1)
-    '''
-    data_container = {
-        'container_init': []
-    }
-    for id in ids:
-        data_container['container_init'].append({id: ids[id]})
-    postData('/', data_container)
-    '''
-
     while True:
         sleep(0.5)
         mymap = b.get_table("mymap")
@@ -81,10 +71,8 @@ try:
             'vfs_io': logical_iosize,
             'network': network_traffic
         }
+        postData('/insert_perform', data_performance, myid)
         
-        postData('/insert_perform', data_performance)
-        
-        '''
         for id in ids:
             if ids[id]['status'] != 'running':
                 continue
@@ -151,16 +139,15 @@ try:
                 
             print()
         
-            postData('/', data_performance)
+            postData('/', data_performance, myid)
             prev_usages['system_cpu_usage'] = system_cpu_usage
             prev_usages['total_cpu_usage'] = total_cpu_usage
             prev_usages['total_disk_usage'] = blkio_total_usage
             prev_usages['total_network_input_usage'] = net_output_bytes
             prev_usages['total_network_output_usage'] = net_input_bytes 
-        '''
 
 except KeyboardInterrupt:
     data_down = {
         'exception': 'KeyboardInterrupt' # 정상 종료
     }
-    postData('/', data_down)
+    postData('/', data_down, myid)
