@@ -12,6 +12,10 @@ import signal
 max_pid = int(open("/proc/sys/kernel/pid_max").read())
 b = BPF(src_file=FILE, cflags=["-DMAX_PID=%d" % max_pid])
 
+print("Tracing Start...")
+# CPU on-time Instrumentation
+b.attach_kprobe(event_re="^finish_task_switch$|^finish_task_switch\.isra\.\d$", fn_name="sched_switch")
+
 # Virtual File System Read/Write Instrumentation
 b.attach_kprobe(event="vfs_read", fn_name="vfs_count_entry")
 b.attach_kprobe(event="vfs_readv", fn_name="vfs_count_entry")
@@ -22,6 +26,19 @@ b.attach_kretprobe(event="vfs_read", fn_name="vfs_count_exit")
 b.attach_kretprobe(event="vfs_readv", fn_name="vfs_count_exit")
 b.attach_kretprobe(event="vfs_write", fn_name="vfs_count_exit")
 b.attach_kretprobe(event="vfs_writev", fn_name="vfs_count_exit")
+
+while True:
+    sleep(1)
+    mymap = b.get_table('mymap')
+    v = mymap.values()
+    print(v)
+    mymap.clear()
+    print(v[0].value)
+    print(v[1].value)
+    print(v[2].value)
+    print(v[3].value)
+
+'''
 
 # Send Metadata (Initialize done)
 if HOST_ID:
@@ -155,3 +172,4 @@ try:
 
 except KeyboardInterrupt:
     pass
+'''
