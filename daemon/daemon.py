@@ -27,19 +27,6 @@ b.attach_kretprobe(event="vfs_readv", fn_name="vfs_count_exit")
 b.attach_kretprobe(event="vfs_write", fn_name="vfs_count_exit")
 b.attach_kretprobe(event="vfs_writev", fn_name="vfs_count_exit")
 
-while True:
-    sleep(1)
-    mymap = b.get_table('mymap')
-    v = mymap.values()
-    print(v)
-    mymap.clear()
-    print(v[0].value)
-    print(v[1].value)
-    print(v[2].value)
-    print(v[3].value)
-
-'''
-
 # Send Metadata (Initialize done)
 if HOST_ID:
     host_id = int(HOST_ID)
@@ -72,23 +59,23 @@ try:
         mymap = b.get_table("mymap")
         v = mymap.values()
         current_time = datetime.datetime.now()
-        physical_iosize = v[0].physical_iosize
-        logical_iosize = v[1].logical_iosize
-        network_traffic = v[2].network_traffic
+        physical_iosize = v[0].value
+        logical_iosize = v[1].value
+        network_traffic = v[2].value
+        cpu_ontime = v[3].value
         mymap.clear()
 
-        cpu_percent = psutil.cpu_percent()
         memory_percent = psutil.virtual_memory().percent
 
         print(f"[+] 현재 시각: {current_time}")
-        print(f"[*] CPU Percent: {cpu_percent}")
+        print(f"[*] CPU On-Time: {cpu_ontime}")
         print(f"[*] Memory Percent: {memory_percent}")
         print(f"[*] Network Traffic : {network_traffic}")
         print(f"[*] Logical I/O : {logical_iosize}")
         print(f"[*] Physical I/O : {physical_iosize}")
         print()
         data_performance = {
-            'cpu_usg': cpu_percent,
+            'cpu_usg': cpu_ontime,
             'mem_usg': memory_percent,
             'disk_io': physical_iosize,
             'vfs_io': logical_iosize,
@@ -172,4 +159,3 @@ try:
 
 except KeyboardInterrupt:
     pass
-'''
