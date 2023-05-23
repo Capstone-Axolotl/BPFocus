@@ -25,7 +25,7 @@ def post_data_sync(path='/', data=None, host_id=None, container_id=None, method=
     json_data = json.dumps(data)
     url = 'http://' + SERVER_IP + ':' + str(SERVER_PORT) + path
     try:
-        print(f"[*] post_data_sync : {json.dumps(json_data)}")
+        print(f"[*] post_data_sync : {json.dumps(data)}")
         response = requests.request(method, url, headers=headers, data=json_data)
 
         if response.status_code == 200:
@@ -54,7 +54,7 @@ def post_data_async(path='/', data=None, host_id=None, container_id=None, method
     url = 'http://' + SERVER_IP + ':' + str(SERVER_PORT) + path
     def send_request():
         try:
-            print(f"[*] post_data_async : {json.dumps(json_data)}")
+            print(f"[*] post_data_async : {json.dumps(data)}")
             response = requests.request(method, url, headers=headers, data=json_data)
             if response.status_code == 200:
                 print('Data sent successfully')
