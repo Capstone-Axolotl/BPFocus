@@ -5,10 +5,10 @@ import os
 from time import strftime
 
 ID=0
-CPU_MAX=0
-DISK_MAX=0
-NET_MAX=0
-VFS_MAX=0
+CPU_MAX=100
+DISK_MAX=10000
+NET_MAX=1000000
+VFS_MAX=10000
 
 def create_app(test_config = None):
     app = Flask(__name__)
