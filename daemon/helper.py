@@ -77,6 +77,11 @@ def handle_exit(signal, frame):
     }}
     post_data_async('/', data_signal)
 
+def get_system_cpu_usage():
+    with open('/proc/stat', 'r') as file:
+        line = file.readline()
+    return sum(int(i) for i in line.split()[1:])
+
 def get_container_info(cid):
     docker_info = {}
     ports = []
@@ -189,14 +194,20 @@ def get_running_containers(host_id):
                 if link.get_attr('IFLA_IFNAME') == 'eth0':
                     index = link.get_attr('IFLA_LINK')
                     veth = ip.get_links(index)[0]
-                    print(ids)
                     ids[container.short_id] = {
                         'status': container.status,
                         'stat': get_container_stat(container_id, veth.get_attr('IFLA_IFNAME'))
                     }
-                    # print(ids[container_id])
+                    print(ids)
                     post_data_sync('/container', get_container_info(container_id), host_id)
-
+'''
+def insert_user(host_id):
+    data_user = {
+        'name': ,
+        'email': '',
+        'id': host_id
+    }
+'''
 def get_metadata():
     uname = platform.uname()
 

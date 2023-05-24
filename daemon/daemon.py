@@ -86,7 +86,7 @@ try:
         for cid in ids:
             if ids[cid]['status'] != 'running':
                 continue
-            system_cpu_usage = int(read(HOST_CPU_PATH + 'cpuacct.usage'))
+            system_cpu_usage = get_system_cpu_usage()
             container_stat_path = ids[cid]['stat']['paths']
             prev_usages = ids[cid]['stat']['prev_usages']
             prev_system_cpu_usage = prev_usages['system_cpu_usage']
@@ -124,9 +124,12 @@ try:
                 'network_output': 0
             }
             if prev_total_cpu_usage != 0:
-                cpu_delta = total_cpu_usage - prev_total_cpu_usage
+                # nanoseconds (10^{-9})
+                cpu_delta = (total_cpu_usage - prev_total_cpu_usage) / 1e7
+
+                # HZ (10^{-2})
                 system_cpu_delta = system_cpu_usage - prev_system_cpu_usage
-                cpu_percent = round((cpu_delta / system_cpu_delta) * NUMBER_OF_CPUS * 100, 2)
+                cpu_percent = round((cpu_delta / system_cpu_delta) * 100, 2)
                 print(f"[*] cpu_delta : {cpu_delta}")
                 print(f"[*] system_cpu_delta : {system_cpu_delta}")
                 print(f"[*] CPU percent : {cpu_percent}%")
@@ -150,7 +153,7 @@ try:
                 
             print()
         
-            post_data_async('/container_perform', data_con_performance, host_id, cid)
+            # post_data_async('/container_perform', data_con_performance, host_id, cid)
             prev_usages['system_cpu_usage'] = system_cpu_usage
             prev_usages['total_cpu_usage'] = total_cpu_usage
             prev_usages['total_disk_usage'] = blkio_total_usage
