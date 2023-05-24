@@ -145,7 +145,7 @@ def create_app(test_config = None):
 
 
         result=[list(row) for row in result]
-        js=json.dumps(result)
+        js=json.dumps(result, default=str)
 
         return jsonify(js)
 
