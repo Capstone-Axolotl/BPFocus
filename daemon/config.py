@@ -13,8 +13,8 @@ if os.path.exists(CONFIG_PATH):
         HOST_ID = int(data[2])
 
 else:
-    SERVER_IP = input("IP of Aggregator Server: ")
-    SERVER_PORT = input("PORT of Aggregator Server: ")
+    SERVER_IP = '172.19.17.236'
+    SERVER_PORT = '5000'
     with open(CONFIG_PATH, 'w') as f:
         f.write(SERVER_IP + ' ' + SERVER_PORT)
 
