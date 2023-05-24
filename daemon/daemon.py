@@ -12,6 +12,10 @@ import signal
 max_pid = int(open("/proc/sys/kernel/pid_max").read())
 b = BPF(src_file=FILE, cflags=["-DMAX_PID=%d" % max_pid])
 
+print("Tracing Start...")
+# CPU on-time Instrumentation
+b.attach_kprobe(event_re="^finish_task_switch$|^finish_task_switch\.isra\.\d$", fn_name="sched_switch")
+
 # Virtual File System Read/Write Instrumentation
 b.attach_kprobe(event="vfs_read", fn_name="vfs_count_entry")
 b.attach_kprobe(event="vfs_readv", fn_name="vfs_count_entry")
@@ -55,23 +59,23 @@ try:
         mymap = b.get_table("mymap")
         v = mymap.values()
         current_time = datetime.datetime.now()
-        physical_iosize = v[0].physical_iosize
-        logical_iosize = v[1].logical_iosize
-        network_traffic = v[2].network_traffic
+        physical_iosize = v[0].value
+        logical_iosize = v[1].value
+        network_traffic = v[2].value
+        cpu_ontime = v[3].value
         mymap.clear()
 
-        cpu_percent = psutil.cpu_percent()
         memory_percent = psutil.virtual_memory().percent
 
         print(f"[+] 현재 시각: {current_time}")
-        print(f"[*] CPU Percent: {cpu_percent}")
+        print(f"[*] CPU On-Time: {cpu_ontime}")
         print(f"[*] Memory Percent: {memory_percent}")
         print(f"[*] Network Traffic : {network_traffic}")
         print(f"[*] Logical I/O : {logical_iosize}")
         print(f"[*] Physical I/O : {physical_iosize}")
         print()
         data_performance = {
-            'cpu_usg': cpu_percent,
+            'cpu_usg': cpu_ontime,
             'mem_usg': memory_percent,
             'disk_io': physical_iosize,
             'vfs_io': logical_iosize,
@@ -82,7 +86,7 @@ try:
         for cid in ids:
             if ids[cid]['status'] != 'running':
                 continue
-            system_cpu_usage = int(read(HOST_CPU_PATH + 'cpuacct.usage'))
+            system_cpu_usage = get_system_cpu_usage()
             container_stat_path = ids[cid]['stat']['paths']
             prev_usages = ids[cid]['stat']['prev_usages']
             prev_system_cpu_usage = prev_usages['system_cpu_usage']
@@ -120,9 +124,12 @@ try:
                 'network_output': 0
             }
             if prev_total_cpu_usage != 0:
-                cpu_delta = total_cpu_usage - prev_total_cpu_usage
+                # nanoseconds (10^{-9})
+                cpu_delta = (total_cpu_usage - prev_total_cpu_usage) / 1e7
+
+                # HZ (10^{-2})
                 system_cpu_delta = system_cpu_usage - prev_system_cpu_usage
-                cpu_percent = round((cpu_delta / system_cpu_delta) * NUMBER_OF_CPUS * 100, 2)
+                cpu_percent = round((cpu_delta / system_cpu_delta) * 100, 2)
                 print(f"[*] cpu_delta : {cpu_delta}")
                 print(f"[*] system_cpu_delta : {system_cpu_delta}")
                 print(f"[*] CPU percent : {cpu_percent}%")
@@ -146,7 +153,7 @@ try:
                 
             print()
         
-            post_data_async('/container_perform', data_con_performance, host_id, cid)
+            # post_data_async('/container_perform', data_con_performance, host_id, cid)
             prev_usages['system_cpu_usage'] = system_cpu_usage
             prev_usages['total_cpu_usage'] = total_cpu_usage
             prev_usages['total_disk_usage'] = blkio_total_usage

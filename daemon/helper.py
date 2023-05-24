@@ -7,6 +7,7 @@ import threading
 import docker
 import platform
 import psutil
+import getpass
 
 def read(path):
     with open(path) as f:
@@ -25,7 +26,7 @@ def post_data_sync(path='/', data=None, host_id=None, container_id=None, method=
     json_data = json.dumps(data)
     url = 'http://' + SERVER_IP + ':' + str(SERVER_PORT) + path
     try:
-        print(f"[*] post_data_sync : {json.dumps(json_data)}")
+        print(f"[*] post_data_sync : {json.dumps(data)}")
         response = requests.request(method, url, headers=headers, data=json_data)
 
         if response.status_code == 200:
@@ -54,7 +55,7 @@ def post_data_async(path='/', data=None, host_id=None, container_id=None, method
     url = 'http://' + SERVER_IP + ':' + str(SERVER_PORT) + path
     def send_request():
         try:
-            print(f"[*] post_data_async : {json.dumps(json_data)}")
+            print(f"[*] post_data_async : {json.dumps(data)}")
             response = requests.request(method, url, headers=headers, data=json_data)
             if response.status_code == 200:
                 print('Data sent successfully')
@@ -76,6 +77,11 @@ def handle_exit(signal, frame):
         'signal': signal
     }}
     post_data_async('/', data_signal)
+
+def get_system_cpu_usage():
+    with open('/proc/stat', 'r') as file:
+        line = file.readline()
+    return sum(int(i) for i in line.split()[1:])
 
 def get_container_info(cid):
     docker_info = {}
@@ -189,14 +195,20 @@ def get_running_containers(host_id):
                 if link.get_attr('IFLA_IFNAME') == 'eth0':
                     index = link.get_attr('IFLA_LINK')
                     veth = ip.get_links(index)[0]
-                    print(ids)
                     ids[container.short_id] = {
                         'status': container.status,
                         'stat': get_container_stat(container_id, veth.get_attr('IFLA_IFNAME'))
                     }
-                    # print(ids[container_id])
+                    print(ids)
                     post_data_sync('/container', get_container_info(container_id), host_id)
-
+'''
+def insert_user(host_id):
+    data_user = {
+        'name': ,
+        'email': '',
+        'id': host_id
+    }
+'''
 def get_metadata():
     uname = platform.uname()
 
@@ -265,7 +277,10 @@ def get_metadata():
     metadata = {
             'kernel_info': kernel_info,
             'network_info': network_info,
-            'disk_info': disk_info
+            'disk_info': disk_info,
+            'name': {
+                'name': getpass.getuser()
+            }
     }
     
     return metadata

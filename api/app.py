@@ -5,6 +5,11 @@ import os
 from time import strftime
 
 ID=0
+CPU_MAX=100
+DISK_MAX=10000
+NET_MAX=1000000
+VFS_MAX=10000
+
 def create_app(test_config = None):
     app = Flask(__name__)
     app.config.from_pyfile("config.py")    
@@ -13,7 +18,7 @@ def create_app(test_config = None):
 
     app.database = database 
 
-    @app.route('/insert_user')
+    @app.route('/insert_user', methods=["POST"])
     def insert_user():
         df=request.json
         
@@ -22,13 +27,21 @@ def create_app(test_config = None):
             conn.commit()
         
 
-    @app.route('/get_user')
+    @app.route('/get_user', methods=["GET", "POST"])
     def get_user():
-        with database.connect() as conn:
-            result = conn.execute(text("""SELECT * FROM user_info; """)).fetchall()
+        if request.method=="POST":
+            df=request.json['id']
+            
+            with database.connect() as conn:
+                result=conn.execute(text("""select * from user_info where id='{}'""".format(df)))
 
+        else:
+            with database.connect() as conn:
+                result = conn.execute(text("""SELECT * FROM user_info; """)).fetchall()
+
+        
         result=[list(row) for row in result]
-        js=json.dumps(result)
+        js=json.dumps(result, default=str)
 
         return jsonify(js)
 
@@ -52,7 +65,48 @@ def create_app(test_config = None):
 
         return jsonify(df)
 
-        
+       
+    @app.route('/get_components')
+    def get_components():
+        file_data={}
+
+        with database.connect() as conn:
+            ID = conn.execute(text("""select id from health_check where status='running'"""))
+
+            for i in ID:
+                result1=conn.execute(text("""select name, email, id from user_info where id='{}'""".format(i[0])))
+                result2=conn.execute(text("""select container_id, name from container_info where id='{}'""".format(i[0])))
+                data={}
+                file_data["nodes"]=[]
+                file_data["links"]=[]
+                for row in result1:
+                    data["email"]=row.email
+                    data["name"]=row.name
+                    data["id"]=row.id
+                
+                file_data["nodes"].append(data)
+                 
+                for row in result2:
+                    data={}
+                    
+                    data["id"]=row.container_id
+                    data["name"]=row.name
+            
+                    file_data["nodes"].append(data)
+
+                    data={}
+                    
+                    data['source']=i[0]
+                    data['target']=row.container_id
+
+                    file_data["links"].append(data)
+            
+
+
+        with open('components_data.json', 'w', encoding='utf-8') as make_file:
+            json.dump(file_data, make_file, ensure_ascii=False, indent='\t')
+        return jsonify(file_data)
+
 
     @app.route('/get_hw')
     def get_hw():
@@ -91,6 +145,10 @@ def create_app(test_config = None):
             health_df['id']=ID
             conn.execute(text("""insert into health_check(status, id) values (:status, :id)"""), health_df)
             conn.commit()
+            
+            df['name']['id']=ID
+            conn.execute(text("""insert into user_info(name, id) values(:name, :id)"""), df['name'] )
+            conn.commit()
 
         return jsonify(ID)
 
@@ -108,6 +166,11 @@ def create_app(test_config = None):
     def insert_perform():
         df=request.json
         df['time'] = strftime('%Y-%m-%d %H:%M:%S')
+        df['cpu_usg']=df['cpu_usg']/CPU_MAX*100
+        df['disk_io']=df['disk_io']/DISK_MAX*100
+        df['network']=df['network']/NET_MAX*100
+        df['vfs_io']=df['vfs_io']/VFS_MAX*100
+
         with database.connect() as conn:
             conn.execute(text("""insert into perform_info(time, cpu_usg, mem_usg, disk_io, network, id, vfs_io) values(:time, :cpu_usg, :mem_usg, :disk_io, :network, :id, :vfs_io)"""), df)
             conn.commit()
@@ -128,37 +191,58 @@ def create_app(test_config = None):
 
         return jsonify(result)
 
-    @app.route('/get_perform')
+    @app.route('/get_perform', methods=["GET", "POST"])
     def get_perform():
-        with database.connect() as conn:
-            result = conn.execute(text("""SELECT * FROM perform_info; """)).fetchall()
-
+        if request.method=="GET":
+            with database.connect() as conn:
+                result = conn.execute(text("""SELECT * FROM perform_info; """)).fetchall()
+           
+        else:
+            df=request.json['id']
+            
+            with database.connect() as conn:
+                result = conn.execute(text("""select * from perform_info where id='{}' order by time desc limit 10""".format(df)))
 
         result=[list(row) for row in result]
-        js=json.dumps(result)
+        js=json.dumps(result, default=str)
 
         return jsonify(js)
 
-        
+       
+    @app.route('/insert_container_perform', methods=["POST"])
+    def insert_container_perform():
+        df=request.json
+
+        df['cpu']=df['cpu']/CPU_MAX*100
+        df['disk_io']=df['disk_io']/DISK_MAX*100
+        df['network_input']=df['network_input']/NET_MAX*100
+        df['network_output']=df['network_output']/NET_MAX*100
+        df['time'] = strftime('%Y-%m-%d %H:%M:%S')
+
+        with database.connect() as conn:
+            conn.execute(text("""insert into container_perform_info(cpu, memory, disk_io, network_input, network_output, id, container_id, time) values (:cpu, :memory, :disk_io, :network_input, :network_output, :id, :container_id, :time)"""), df)
+            conn.commit()
+
+        return jsonify(df)
+
     @app.route('/container_perform', methods=["POST", "GET"])
     def container_perform():
         if request.method=="POST":
-            df=request.json
-
+            df=request.json['id']
+            
             with database.connect() as conn:
-                conn.execute(text("""insert into container_perform_info(cpu, memory, disk_io, network_input, network_output, id, container_id) values (:cpu, :memory, :disk_io, :network_input, :network_output, :id, :container_id)"""), df)
-                conn.commit()
+                result = conn.execute(text("""select * from container_perform_info where id='{}' order by time desc limit 10""".format(df)))
 
-            return jsonify(df)
 
         else:
             with database.connect() as conn:
                 result = conn.execute(text("""select * from container_perform_info""")).fetchall()
 
-                result=[list(row) for row in result]
-                js=json.dumps(result)
+        
+        result=[list(row) for row in result]
+        js=json.dumps(result)
 
-            return jsonify(js)
+        return jsonify(js)
 
 
     @app.route('/container', methods=["POST", "GET", "DELETE"])
@@ -190,9 +274,6 @@ def create_app(test_config = None):
 
             return jsonify(js)
 
-
-
-            
         
     return app
 
