@@ -41,7 +41,7 @@ def create_app(test_config = None):
 
         
         result=[list(row) for row in result]
-        js=json.dumps(result)
+        js=json.dumps(result, default=str)
 
         return jsonify(js)
 
@@ -65,7 +65,28 @@ def create_app(test_config = None):
 
         return jsonify(df)
 
-        
+       
+    @app.route('/get_components')
+    def get_components():
+        file_data={}
+
+        with database.connect() as conn:
+            ID = conn.execute(text("""select id from health_check where status='running'"""))
+            ID=1 
+            conn.execute(text("""select name, email from user_info where id='{}'""".format(ID)))
+            
+            row=conn.fetchone()
+            while row:
+                file_data['name']=str(row[0])
+                file_data['email']=str(row[0])
+                row=conn.fetchone()
+
+        #result=[list(row) for row in result]
+       
+        file_data["nodes"]=result
+        return jsonify(file_data)
+        #with open('data.json', 'w', encoding='utf8mb4') as make_file:
+            #json.dump(file_data, make_file, ensure_ascii=False, indent='\t')
 
     @app.route('/get_hw')
     def get_hw():
@@ -103,6 +124,9 @@ def create_app(test_config = None):
             health_df['status']="running"
             health_df['id']=ID
             conn.execute(text("""insert into health_check(status, id) values (:status, :id)"""), health_df)
+            conn.commit()
+
+            conn.execute(text("""insert into user_info(name) values(:name)"""), df['name'])
             conn.commit()
 
         return jsonify(ID)
@@ -163,38 +187,48 @@ def create_app(test_config = None):
 
         return jsonify(js)
 
-        
+       
+    @app.route('/insert_container_perform', methods=["POST"])
+    def insert_container_perform():
+        df=request.json
+
+        df['cpu']=df['cpu']/CPU_MAX*100
+        df['disk_io']=df['disk_io']/DISK_MAX*100
+        df['network_input']=df['network_input']/NET_MAX*100
+        df['network_output']=df['network_output']/NET_MAX*100
+        df['time'] = strftime('%Y-%m-%d %H:%M:%S')
+
+        with database.connect() as conn:
+            conn.execute(text("""insert into container_perform_info(cpu, memory, disk_io, network_input, network_output, id, container_id, time) values (:cpu, :memory, :disk_io, :network_input, :network_output, :id, :container_id, :time)"""), df)
+            conn.commit()
+
+        return jsonify(df)
+
     @app.route('/container_perform', methods=["POST", "GET"])
     def container_perform():
         if request.method=="POST":
-            df=request.json
-
-            df['cpu']=df['cpu']/CPU_MAX*100
-            df['disk_io']=df['disk_io']/DISK_MAX*100
-            df['network_input']=df['network_input']/NET_MAX*100
-            df['network_output']=df['network_output']/NET_MAX*100
+            df=request.json['id']
             
             with database.connect() as conn:
-                conn.execute(text("""insert into container_perform_info(cpu, memory, disk_io, network_input, network_output, id, container_id) values (:cpu, :memory, :disk_io, :network_input, :network_output, :id, :container_id)"""), df)
-                conn.commit()
+                result = conn.execute(text("""select * from container_perform_info where id='{}' order by time desc limit 10""".format(df)))
 
-            return jsonify(df)
 
         else:
             with database.connect() as conn:
                 result = conn.execute(text("""select * from container_perform_info""")).fetchall()
 
-                result=[list(row) for row in result]
-                js=json.dumps(result)
+        
+        result=[list(row) for row in result]
+        js=json.dumps(result)
 
-            return jsonify(js)
+        return jsonify(js)
 
 
     @app.route('/container', methods=["POST", "GET", "DELETE"])
     def container():
         if request.method=="POST":
             df=request.json
-            
+
             with database.connect() as conn:
                 conn.execute(text("""insert into container_info(name, container_id, status, image_tag, command, networks, ip, ports, created, id) values(:name, :container_id, :status, :image_tag, :command, :networks, :ip, :ports, :created, :id)"""), df)
                 conn.commit()
