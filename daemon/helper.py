@@ -278,7 +278,9 @@ def get_metadata():
             'kernel_info': kernel_info,
             'network_info': network_info,
             'disk_info': disk_info,
-            'name': getpass.getuser()
+            'name': {
+                'name': getpass.getuser()
+            }
     }
     
     return metadata
