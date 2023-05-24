@@ -7,6 +7,7 @@ import threading
 import docker
 import platform
 import psutil
+import getpass
 
 def read(path):
     with open(path) as f:
@@ -276,7 +277,10 @@ def get_metadata():
     metadata = {
             'kernel_info': kernel_info,
             'network_info': network_info,
-            'disk_info': disk_info
+            'disk_info': disk_info,
+            'name': {
+                'name': getpass.getuser()
+            }
     }
     
     return metadata
