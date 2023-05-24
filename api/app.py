@@ -72,21 +72,41 @@ def create_app(test_config = None):
 
         with database.connect() as conn:
             ID = conn.execute(text("""select id from health_check where status='running'"""))
-            ID=1 
-            conn.execute(text("""select name, email from user_info where id='{}'""".format(ID)))
-            
-            row=conn.fetchone()
-            while row:
-                file_data['name']=str(row[0])
-                file_data['email']=str(row[0])
-                row=conn.fetchone()
 
-        #result=[list(row) for row in result]
-       
-        file_data["nodes"]=result
+            for i in ID:
+                result1=conn.execute(text("""select name, email, id from user_info where id='{}'""".format(i[0])))
+                result2=conn.execute(text("""select container_id, name from container_info where id='{}'""".format(i[0])))
+                data={}
+                file_data["nodes"]=[]
+                file_data["links"]=[]
+                for row in result1:
+                    data["email"]=row.email
+                    data["name"]=row.name
+                    data["id"]=row.id
+                
+                file_data["nodes"].append(data)
+                 
+                for row in result2:
+                    data={}
+                    
+                    data["id"]=row.container_id
+                    data["name"]=row.name
+            
+                    file_data["nodes"].append(data)
+
+                    data={}
+                    
+                    data['source']=i[0]
+                    data['target']=row.container_id
+
+                    file_data["links"].append(data)
+            
+
+
+        with open('components_data.json', 'w', encoding='utf-8') as make_file:
+            json.dump(file_data, make_file, ensure_ascii=False, indent='\t')
         return jsonify(file_data)
-        #with open('data.json', 'w', encoding='utf8mb4') as make_file:
-            #json.dump(file_data, make_file, ensure_ascii=False, indent='\t')
+
 
     @app.route('/get_hw')
     def get_hw():
@@ -125,8 +145,9 @@ def create_app(test_config = None):
             health_df['id']=ID
             conn.execute(text("""insert into health_check(status, id) values (:status, :id)"""), health_df)
             conn.commit()
-
-            conn.execute(text("""insert into user_info(name) values(:name)"""), df['name'])
+            
+            df['name']['id']=ID
+            conn.execute(text("""insert into user_info(name, id) values(:name, :id)"""), df['name'] )
             conn.commit()
 
         return jsonify(ID)
