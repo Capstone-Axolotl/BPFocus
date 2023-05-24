@@ -18,7 +18,7 @@ def create_app(test_config = None):
 
     app.database = database 
 
-    @app.route('/insert_user')
+    @app.route('/insert_user', methods=["POST"])
     def insert_user():
         df=request.json
         
@@ -27,11 +27,19 @@ def create_app(test_config = None):
             conn.commit()
         
 
-    @app.route('/get_user')
+    @app.route('/get_user', methods=["GET", "POST"])
     def get_user():
-        with database.connect() as conn:
-            result = conn.execute(text("""SELECT * FROM user_info; """)).fetchall()
+        if request.method=="POST":
+            df=request.json['id']
+            
+            with database.connect() as conn:
+                result=conn.execute(text("""select * from user_info where id='{}'""".format(df)))
 
+        else:
+            with database.connect() as conn:
+                result = conn.execute(text("""SELECT * FROM user_info; """)).fetchall()
+
+        
         result=[list(row) for row in result]
         js=json.dumps(result)
 
@@ -138,11 +146,17 @@ def create_app(test_config = None):
 
         return jsonify(result)
 
-    @app.route('/get_perform')
+    @app.route('/get_perform', methods=["GET", "POST"])
     def get_perform():
-        with database.connect() as conn:
-            result = conn.execute(text("""SELECT * FROM perform_info; """)).fetchall()
-
+        if request.method=="GET":
+            with database.connect() as conn:
+                result = conn.execute(text("""SELECT * FROM perform_info; """)).fetchall()
+           
+        else:
+            df=request.json['id']
+            
+            with database.connect() as conn:
+                result = conn.execute(text("""select * from perform_info where id='{}' order by time desc limit 10""".format(df)))
 
         result=[list(row) for row in result]
         js=json.dumps(result, default=str)
