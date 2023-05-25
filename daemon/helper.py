@@ -154,7 +154,7 @@ def monitor_container_events(host_id):
                                 veth = ip.get_links(index)[0]
                                 ids[container.short_id] = {
                                     'status': 'running',
-                                    'stat': get_container_stat(container_id, veth.get_attr('IFLA_IFNAME'))
+                                    'stat': get_container_stat(container.id, veth.get_attr('IFLA_IFNAME'))
                                 }
 
                 # 부팅과 동시에 종료되는 컨테이너 에러 핸들링
