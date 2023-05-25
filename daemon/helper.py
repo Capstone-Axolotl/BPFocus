@@ -76,7 +76,7 @@ def handle_exit(signal, frame):
     data_signal = {'exception': {
         'signal': signal
     }}
-    post_data_async('/', data_signal)
+    # post_data_async('/', data_signal)
 
 def get_system_cpu_usage():
     with open('/proc/stat', 'r') as file:
