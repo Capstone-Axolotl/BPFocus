@@ -108,8 +108,12 @@ try:
             # Disk (blkio.throttle.io_service_bytes)
             io_service_bytes_recursive = readlines(container_stat_path['disk'] + 'blkio.throttle.io_service_bytes_recursive')
             blkio_total_usage = int(io_service_bytes_recursive[-1].split()[1])
-            blkio_read_usage = int(io_service_bytes_recursive[0].split()[2])
-            blkio_write_usage = int(io_service_bytes_recursive[1].split()[2])
+            
+            if len(io_service_bytes_recursive[0].split()) == 2: # Total 0
+                blkio_total_usage = 0
+            else:
+                blkio_read_usage = int(io_service_bytes_recursive[0].split()[2])
+                blkio_write_usage = int(io_service_bytes_recursive[1].split()[2])
             
             # Network
             netns_stat_path = container_stat_path['network']

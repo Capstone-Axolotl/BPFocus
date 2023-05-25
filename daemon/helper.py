@@ -199,7 +199,7 @@ def get_running_containers(host_id):
                         'status': container.status,
                         'stat': get_container_stat(container_id, veth.get_attr('IFLA_IFNAME'))
                     }
-                    print(ids)
+                    # print(ids)
                     post_data_sync('/container', get_container_info(container_id), host_id)
 '''
 def insert_user(host_id):
