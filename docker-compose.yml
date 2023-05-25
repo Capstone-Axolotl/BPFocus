@@ -102,22 +102,4 @@ services:
                         - "8017:8017"
                 stdin_open: true
                 tty: true
-        ddos18:
-                image: ddos-scenario:latest
-                ports:
-                        - "8018:8018"
-                stdin_open: true
-                tty: true
-        ddos19:
-                image: ddos-scenario:latest
-                ports:
-                        - "8019:8019"
-                stdin_open: true
-                tty: true
-        ddos20:
-                image: ddos-scenario:latest
-                ports:
-                        - "8020:8020"
-                stdin_open: true
-                tty: true
 
