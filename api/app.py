@@ -5,9 +5,9 @@ import os
 from time import strftime
 
 ID=0
-CPU_MAX=100
+CPU_MAX=5000000
 DISK_MAX=10000
-NET_MAX=1000000
+NET_MAX=100000
 VFS_MAX=10000
 
 def create_app(test_config = None):
@@ -166,7 +166,8 @@ def create_app(test_config = None):
     def insert_perform():
         df=request.json
         df['time'] = strftime('%Y-%m-%d %H:%M:%S')
-        df['cpu_usg']=df['cpu_usg']/CPU_MAX*100
+        df['cpu_usg']=round(df['cpu_usg']/CPU_MAX*100, 2)
+        if(df['cpu_usg'])>100 : df['cpu_usg']=100
         df['disk_io']=df['disk_io']/DISK_MAX*100
         df['network']=df['network']/NET_MAX*100
         df['vfs_io']=df['vfs_io']/VFS_MAX*100
