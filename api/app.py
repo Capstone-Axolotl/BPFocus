@@ -267,10 +267,10 @@ def create_app(test_config = None):
     def insert_container_perform():
         df=request.json
 
-        df['cpu']=df['cpu']/CPU_MAX*100
-        df['disk_io']=df['disk_io']/DISK_MAX*100
-        df['network_input']=df['network_input']/NET_MAX*100
-        df['network_output']=df['network_output']/NET_MAX*100
+        df['cpu'] = round(df['cpu']/CPU_MAX*100, 2)
+        df['disk_io'] = round(df['disk_io']/DISK_MAX*100, 2)
+        df['network_input'] = round(df['network_input']/NET_MAX*100, 2)
+        df['network_output'] = round(df['network_output']/NET_MAX*100, 2)
         df['time'] = strftime('%Y-%m-%d %H:%M:%S')
 
         with database.connect() as conn:

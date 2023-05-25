@@ -76,7 +76,7 @@ def handle_exit(signal, frame):
     data_signal = {'exception': {
         'signal': signal
     }}
-    post_data_async('/', data_signal)
+    # post_data_async('/', data_signal)
 
 def get_system_cpu_usage():
     with open('/proc/stat', 'r') as file:
@@ -154,7 +154,7 @@ def monitor_container_events(host_id):
                                 veth = ip.get_links(index)[0]
                                 ids[container.short_id] = {
                                     'status': 'running',
-                                    'stat': get_container_stat(container_id, veth.get_attr('IFLA_IFNAME'))
+                                    'stat': get_container_stat(container.id, veth.get_attr('IFLA_IFNAME'))
                                 }
 
                 # 부팅과 동시에 종료되는 컨테이너 에러 핸들링
@@ -199,7 +199,7 @@ def get_running_containers(host_id):
                         'status': container.status,
                         'stat': get_container_stat(container_id, veth.get_attr('IFLA_IFNAME'))
                     }
-                    print(ids)
+                    # print(ids)
                     post_data_sync('/container', get_container_info(container_id), host_id)
 '''
 def insert_user(host_id):
