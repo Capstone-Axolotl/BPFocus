@@ -1,0 +1,123 @@
+version: "3.3"
+services:
+        ddos1:
+                image: ddos-scenario:latest
+                ports:
+                        - "8001:8001"
+                stdin_open: true
+                tty: true
+        ddos2:
+                image: ddos-scenario:latest
+                ports: 
+                        - "8002:8002"
+                stdin_open: true
+                tty: true
+        ddos3:
+                image: ddos-scenario:latest
+                ports:
+                        - "8003:8003"
+                stdin_open: true
+                tty: true
+        ddos4:
+                image: ddos-scenario:latest
+                ports:
+                        - "8004:8004"
+                stdin_open: true
+                tty: true
+        ddos5:
+                image: ddos-scenario:latest
+                ports:
+                        - "8005:8005"
+                stdin_open: true
+                tty: true
+        ddos6:
+                image: ddos-scenario:latest
+                ports:
+                        - "8006:8006"
+                stdin_open: true
+                tty: true
+        ddos7:
+                image: ddos-scenario:latest
+                ports:
+                        - "8007:8007"
+                stdin_open: true
+                tty: true
+        ddos8:
+                image: ddos-scenario:latest
+                ports:
+                        - "8008:8008"
+                stdin_open: true
+                tty: true
+        ddos9:
+                image: ddos-scenario:latest
+                ports:
+                        - "8009:8009"
+                stdin_open: true
+                tty: true
+        ddos10:
+                image: ddos-scenario:latest
+                ports:
+                        - "8010:8010"
+                stdin_open: true
+                tty: true
+        ddos11:
+                image: ddos-scenario:latest
+                ports:
+                        - "8011:8011"
+                stdin_open: true
+                tty: true
+        ddos12:
+                image: ddos-scenario:latest
+                ports:
+                        - "8012:8012"
+                stdin_open: true
+                tty: true
+        ddos13:
+                image: ddos-scenario:latest
+                ports:
+                        - "8013:8013"
+                stdin_open: true
+                tty: true
+        ddos14:
+                image: ddos-scenario:latest
+                ports:
+                        - "8014:8014"
+                stdin_open: true
+                tty: true
+        ddos15:
+                image: ddos-scenario:latest
+                ports:
+                        - "8015:8015"
+                stdin_open: true
+                tty: true
+        ddos16:
+                image: ddos-scenario:latest
+                ports:
+                        - "8016:8016"
+                stdin_open: true
+                tty: true
+        ddos17:
+                image: ddos-scenario:latest
+                ports:
+                        - "8017:8017"
+                stdin_open: true
+                tty: true
+        ddos18:
+                image: ddos-scenario:latest
+                ports:
+                        - "8018:8018"
+                stdin_open: true
+                tty: true
+        ddos19:
+                image: ddos-scenario:latest
+                ports:
+                        - "8019:8019"
+                stdin_open: true
+                tty: true
+        ddos20:
+                image: ddos-scenario:latest
+                ports:
+                        - "8020:8020"
+                stdin_open: true
+                tty: true
+
