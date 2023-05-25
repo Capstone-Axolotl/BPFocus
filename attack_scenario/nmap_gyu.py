@@ -17,6 +17,6 @@ def run_nmap_scan(targets, ports):
         print(f"오류 발생: {e}")
         
 # 테스트
-target_ips = ["192.168.198.128"]  # 대상 IP 주소 리스트
+target_ips = ["127.0.0.1", "192.168.198.128"]  # 대상 IP 주소 리스트
 port_range = "1-65535"  # 스캔할 포트 범위
 run_nmap_scan(target_ips, port_range)

@@ -72,7 +72,7 @@ def create_app(test_config = None):
 
         with database.connect() as conn:
             ID = conn.execute(text("""select id from health_check where status='running'"""))
-
+            ID='24'
             for i in ID:
                 result1=conn.execute(text("""select name, email, id from user_info where id='{}'""".format(i[0])))
                 result2=conn.execute(text("""select container_id, name from container_info where id='{}'""".format(i[0])))
@@ -103,7 +103,7 @@ def create_app(test_config = None):
             
 
 
-        with open('components_data.json', 'w', encoding='utf-8') as make_file:
+        with open('/home/gyu/axolotl_front/src/components/Network/components_data.json', 'w', encoding='utf-8') as make_file:
             json.dump(file_data, make_file, ensure_ascii=False, indent='\t')
         return jsonify(file_data)
 
@@ -161,7 +161,22 @@ def create_app(test_config = None):
         js=json.dumps(result)
 
         return jsonify(js)
-    
+   
+    @app.route('/anomaly', methods=["GET", "POST"])
+    def anomaly():
+        global CPU_MAX
+        global DISK_MAX
+        global NET_MAX
+        global VFS_MAX
+        
+        if request.method=="POST":
+            df=request.json
+            CPU_MAX=df['cpu']
+            DISK_MAX=df['disk']
+            NET_MAX=df['network']
+            
+
+
     @app.route('/insert_perform', methods=["POST"])
     def insert_perform():
         df=request.json
@@ -197,17 +212,55 @@ def create_app(test_config = None):
         if request.method=="GET":
             with database.connect() as conn:
                 result = conn.execute(text("""SELECT * FROM perform_info; """)).fetchall()
-           
+        
+            result=[list(row) for row in result]
+            js=json.dumps(result, default=str)
+            return jsonify(js)
+            
         else:
             df=request.json['id']
-            
-            with database.connect() as conn:
-                result = conn.execute(text("""select * from perform_info where id='{}' order by time desc limit 10""".format(df)))
+             
+            try: 
+                int(df)
 
-        result=[list(row) for row in result]
-        js=json.dumps(result, default=str)
+                with database.connect() as conn:
+                    result = conn.execute(text("""select * from perform_info where id='{}' order by time desc limit 10""".format(df)))
+                
+                file_data={df:[]}
+                
+                for i in result:
+                    data={}
+                    data["date"]=str(i.time)
+                    data["cpu"]=i.cpu_usg
+                    data["memory"]=i.mem_usg
+                    data["disk_io"]=i.disk_io
+                    data["network"]=i.network
+                    data["vfs_io"]=i.vfs_io
+                    
+                    file_data[df].append(data)
 
-        return jsonify(js)
+            except ValueError:
+                with database.connect() as conn:
+                    result = conn.execute(text("""select * from container_perform_info where id='{}' order by time desc limit 10""".format(df)))
+
+                    file_data={df:[]}
+
+                    for i in result:
+                        data={}
+                        data["date"]=str(i.time)
+                        data["cpu"]=i.cpu
+                        data["memory"]=i.memory
+                        data["disk_io"]=i.disk_io
+                        data["network"]=i.network_input+i.network_output
+                        data["vfs_io"]=NULL
+
+                        file_data[df].append(data)
+                
+            with open('perform.json', 'w', encoding='utf-8') as make_file:
+                json.dump(file_data, make_file, ensure_ascii=False, indent='\t')
+                return jsonify(file_data)
+
+
 
        
     @app.route('/insert_container_perform', methods=["POST"])
@@ -226,20 +279,12 @@ def create_app(test_config = None):
 
         return jsonify(df)
 
-    @app.route('/container_perform', methods=["POST", "GET"])
+    @app.route('/container_perform')
     def container_perform():
-        if request.method=="POST":
-            df=request.json['id']
-            
-            with database.connect() as conn:
-                result = conn.execute(text("""select * from container_perform_info where id='{}' order by time desc limit 10""".format(df)))
+        with database.connect() as conn:
+            result = conn.execute(text("""select * from container_perform_info""")).fetchall()
 
-
-        else:
-            with database.connect() as conn:
-                result = conn.execute(text("""select * from container_perform_info""")).fetchall()
-
-        
+    
         result=[list(row) for row in result]
         js=json.dumps(result)
 
