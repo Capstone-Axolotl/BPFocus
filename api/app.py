@@ -213,6 +213,51 @@ def create_app(test_config = None):
 
         return jsonify(result)
 
+    @app.route('/get_perform_with_id', methods=["POST"])
+    def get_perform_with_id():
+        df=request.json['id']
+             
+        try: 
+            int(df)
+
+            with database.connect() as conn:
+                result = conn.execute(text("""select * from perform_info where id='{}' order by time desc limit 10""".format(df)))
+            
+            file_data={df:[]}
+            
+            for i in result:
+                data={}
+                data["date"]=str(i.time)
+                data["cpu"]=i.cpu_usg
+                data["memory"]=i.mem_usg
+                data["disk_io"]=i.disk_io
+                data["network"]=i.network
+                data["vfs_io"]=i.vfs_io
+                
+                file_data[df].append(data)
+
+        except ValueError:
+            with database.connect() as conn:
+                result = conn.execute(text("""select * from container_perform_info where id='{}' order by time desc limit 10""".format(df)))
+
+                file_data={df:[]}
+
+                for i in result:
+                    data={}
+                    data["date"]=str(i.time)
+                    data["cpu"]=i.cpu
+                    data["memory"]=i.memory
+                    data["disk_io"]=i.disk_io
+                    data["network"]=i.network_input+i.network_output
+                    data["vfs_io"]=NULL
+
+                    file_data[df].append(data)
+            
+        with open('perform.json', 'w', encoding='utf-8') as make_file:
+            json.dump(file_data, make_file, ensure_ascii=False, indent='\t')
+            return jsonify(file_data)
+
+
     @app.route('/get_perform', methods=["GET", "POST"])
     def get_perform():
         if request.method=="GET":
@@ -240,49 +285,7 @@ def create_app(test_config = None):
 
             return jsonify(file_data)
             
-        else:
-            df=request.json['id']
-             
-            try: 
-                int(df)
-
-                with database.connect() as conn:
-                    result = conn.execute(text("""select * from perform_info where id='{}' order by time desc limit 10""".format(df)))
-                
-                file_data={df:[]}
-                
-                for i in result:
-                    data={}
-                    data["date"]=str(i.time)
-                    data["cpu"]=i.cpu_usg
-                    data["memory"]=i.mem_usg
-                    data["disk_io"]=i.disk_io
-                    data["network"]=i.network
-                    data["vfs_io"]=i.vfs_io
-                    
-                    file_data[df].append(data)
-
-            except ValueError:
-                with database.connect() as conn:
-                    result = conn.execute(text("""select * from container_perform_info where id='{}' order by time desc limit 10""".format(df)))
-
-                    file_data={df:[]}
-
-                    for i in result:
-                        data={}
-                        data["date"]=str(i.time)
-                        data["cpu"]=i.cpu
-                        data["memory"]=i.memory
-                        data["disk_io"]=i.disk_io
-                        data["network"]=i.network_input+i.network_output
-                        data["vfs_io"]=NULL
-
-                        file_data[df].append(data)
-                
-            with open('perform.json', 'w', encoding='utf-8') as make_file:
-                json.dump(file_data, make_file, ensure_ascii=False, indent='\t')
-                return jsonify(file_data)
-
+           
 
 
        
@@ -305,11 +308,30 @@ def create_app(test_config = None):
     @app.route('/container_perform')
     def container_perform():
         with database.connect() as conn:
-            result = conn.execute(text("""select * from container_perform_info""")).fetchall()
+            
+            with database.connect() as conn:
+                result = conn.execute(text("""SELECT distinct container_id FROM container_perform_info; """)).fetchall()
+                file_data=[]
+                for i in result:
+                    perform_id=i.container_id
+                    result2 = conn.execute(text("""select * from container_perform_info where container_id='{}' order by time desc limit 60""".format(perform_id)))
 
-    
-        result=[list(row) for row in result]
-        js=json.dumps(result)
+                    list_data={perform_id:[]}
+                    for j in result2:
+                        data={}
+                        data["date"]=str(j.time)
+                        data["cpu"]=j.cpu
+                        data["memory"]=j.memory
+                        data["disk_io"]=j.disk_io
+                        data["network"]=j.network_input+j.network_input
+                        data["vfs_io"]="NULL"
+
+                        list_data[perform_id].append(data)
+
+                    file_data.append(list_data)
+
+
+            return jsonify(file_data)
 
         return jsonify(js)
 
