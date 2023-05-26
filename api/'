@@ -217,25 +217,24 @@ def create_app(test_config = None):
     def get_perform():
         if request.method=="GET":
             with database.connect() as conn:
-                result = conn.execute(text("""SELECT distinct id FROM perform_info; """)).fetchall()
-                file_data=[]
+                result = conn.execute(text("""SELECT * FROM perform_info; """)).fetchall()
+
                 for i in result:
+                    print((i.id))
                     perform_id=i.id
-                    result2 = conn.execute(text("""select * from perform_info where id='{}' order by time desc limit 60""".format(perform_id)))
+                    result2 = conn.execute(text("""select * from perform_info where id='{}'.format(perform_id)"""))
 
-                    list_data={perform_id:[]}
-                    for j in result2:
-                        data={}
-                        data["date"]=str(j.time)
-                        data["cpu"]=j.cpu_usg
-                        data["memory"]=j.mem_usg
-                        data["disk_io"]=j.disk_io
-                        data["network"]=j.network
-                        data["vfs_io"]=j.vfs_io
 
-                        list_data[perform_id].append(data)
+                    file_data={i.id:[]}
+                    data={}
+                    data["date"]=str(i.time)
+                    data["cpu"]=i.j.cpu_usg
+                    data["memory"]=j.mem_usg
+                    data["disk_io"]=j.disk_io
+                    data["network"]=j.network
+                    data["vfs_io"]=j.vfs_io
 
-                    file_data.append(list_data)
+                    file_data[i.id].append(data)
 
 
             return jsonify(file_data)
