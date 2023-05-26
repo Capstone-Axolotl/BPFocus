@@ -182,7 +182,6 @@ def create_app(test_config = None):
             VFS_LIMIT=df['vfs']
             
 
-
     @app.route('/insert_perform', methods=["POST"])
     def insert_perform():
         df=request.json
@@ -284,10 +283,34 @@ def create_app(test_config = None):
 
 
             return jsonify(file_data)
-            
+
+        else:
+            df=request.json['time']
+            with database.connect() as conn:
+                result = conn.execute(text("""select distinct id from perform_info where time < '{}'""".format(df)))
+                file_data=[]
+                for i in result:
+                    perform_id=i.id
+                    print(perform_id)
+                    result2 = conn.execute(text("""select * from perform_info where id='{}' and time < '{}' order by time desc limit 10""".format(perform_id, df)))
+
+                    list_data={perform_id:[]}
+                    for j in result2:
+                        data={}
+                        data["date"]=str(j.time)
+                        data["cpu"]=j.cpu_usg
+                        data["memory"]=j.mem_usg
+                        data["disk_io"]=j.disk_io
+                        data["network"]=j.network
+                        data["vfs_io"]=j.vfs_io
+
+                        list_data[perform_id].append(data)
+
+                    file_data.append(list_data)
+
+
+            return jsonify(file_data)
            
-
-
        
     @app.route('/insert_container_perform', methods=["POST"])
     def insert_container_perform():
@@ -305,26 +328,54 @@ def create_app(test_config = None):
 
         return jsonify(df)
 
-    @app.route('/container_perform')
+    @app.route('/container_perform', methods=["GET", "POST"])
     def container_perform():
-        with database.connect() as conn:
-            
+        if request.method=="GET":
             with database.connect() as conn:
-                result = conn.execute(text("""SELECT distinct container_id FROM container_perform_info; """)).fetchall()
+                
+                with database.connect() as conn:
+                    result = conn.execute(text("""SELECT distinct container_id FROM container_perform_info; """)).fetchall()
+                    file_data=[]
+                    for i in result:
+                        perform_id=i.container_id
+                        result2 = conn.execute(text("""select * from container_perform_info where container_id='{}' order by time desc limit 60""".format(perform_id)))
+
+                        list_data={perform_id:[]}
+                        for j in result2:
+                            data={}
+                            data["date"]=str(j.time)
+                            data["cpu"]=j.cpu
+                            data["memory"]=j.memory
+                            data["disk_io"]=j.disk_io
+                            data["network"]=j.network_input+j.network_input
+                            data["vfs_io"]="NULL"
+
+                            list_data[perform_id].append(data)
+
+                        file_data.append(list_data)
+
+
+                return jsonify(file_data)
+
+        else:
+            df=request.json['time']
+            with database.connect() as conn:
+                result = conn.execute(text("""select distinct container_id from container_perform_info where time < '{}'""".format(df)))
                 file_data=[]
                 for i in result:
-                    perform_id=i.container_id
-                    result2 = conn.execute(text("""select * from container_perform_info where container_id='{}' order by time desc limit 60""".format(perform_id)))
+                    perform_id=i.id
+                    print(perform_id)
+                    result2 = conn.execute(text("""select * from container_perform_info where id='{}' and time < '{}' order by time desc limit 10""".format(perform_id, df)))
 
                     list_data={perform_id:[]}
                     for j in result2:
                         data={}
                         data["date"]=str(j.time)
-                        data["cpu"]=j.cpu
-                        data["memory"]=j.memory
+                        data["cpu"]=j.cpu_usg
+                        data["memory"]=j.mem_usg
                         data["disk_io"]=j.disk_io
-                        data["network"]=j.network_input+j.network_input
-                        data["vfs_io"]="NULL"
+                        data["network"]=j.network
+                        data["vfs_io"]=j.vfs_io
 
                         list_data[perform_id].append(data)
 
@@ -332,8 +383,6 @@ def create_app(test_config = None):
 
 
             return jsonify(file_data)
-
-        return jsonify(js)
 
 
     @app.route('/container', methods=["POST", "GET", "DELETE"])
