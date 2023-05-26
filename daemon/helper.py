@@ -8,6 +8,7 @@ import docker
 import platform
 import psutil
 import getpass
+import os
 
 def read(path):
     with open(path) as f:
@@ -279,7 +280,7 @@ def get_metadata():
             'network_info': network_info,
             'disk_info': disk_info,
             'name': {
-                'name': getpass.getuser()
+                'name': os.getlogin()
             }
     }
     

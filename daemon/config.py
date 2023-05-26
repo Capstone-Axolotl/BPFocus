@@ -9,11 +9,11 @@ if os.path.exists(CONFIG_PATH):
         data = f.read().split()
     SERVER_IP = data[0]
     SERVER_PORT = data[1]
-    if len(data) == 3:
-        HOST_ID = int(data[2])
+    # if len(data) == 3:
+    #     HOST_ID = int(data[2])
 
 else:
-    SERVER_IP = '172.19.17.236'
+    SERVER_IP = '127.0.0.1'
     SERVER_PORT = '5000'
     with open(CONFIG_PATH, 'w') as f:
         f.write(SERVER_IP + ' ' + SERVER_PORT)
