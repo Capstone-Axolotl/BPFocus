@@ -169,17 +169,38 @@ def create_app(test_config = None):
    
     @app.route('/anomaly', methods=["GET", "POST"])
     def anomaly():
-        global CPU_LIMIT
-        global DISK_LIMIT
-        global NET_LIMIT
-        global VFS_LIMIT
+        global CPU_LIMIT, CPU_MAX
+        global DISK_LIMIT, DISK_MAX
+        global NET_LIMIT, NET_MAX
+        global VFS_LIMIT, VFS_MAX
         
+        file_data={}
         if request.method=="POST":
             df=request.json
-            CPU_LIMIT=df['cpu']
-            DISK_LIMIT=df['disk']
-            NET_LIMIT=df['network']
-            VFS_LIMIT=df['vfs']
+            CPU_LIMIT=df['cpu_limit']
+            DISK_LIMIT=df['disk_limit']
+            NET_LIMIT=df['network_limit']
+            VFS_LIMIT=df['vfs_limit']
+
+            CPU_MAX=df['cpu_max']
+            DISK_MAX=df['disk_max']
+            NET_MAX=df['network_max']
+            VFS_MAX=df['vfs_max']
+
+        file_data["CPU_LIMIT"]=CPU_LIMIT
+        file_data["DISK_LIMIT"]=DISK_LIMIT
+        file_data["NET_LIMIT"]=NET_LIMIT
+        file_data["VFS_LIMIT"]=VFS_LIMIT
+
+        file_data["CPU_MAX"]=CPU_MAX
+        file_data["DISK_MAX"]=DISK_MAX
+        file_data["NET_MAX"]=NET_MAX
+        file_data["VFS_MAX"]=VFS_MAX
+
+
+        return jsonify(file_data)
+            
+
             
 
     @app.route('/insert_perform', methods=["POST"])
@@ -330,32 +351,31 @@ def create_app(test_config = None):
 
     @app.route('/container_perform', methods=["GET", "POST"])
     def container_perform():
+    # GET => id search, POST => timestamp search
         if request.method=="GET":
             with database.connect() as conn:
-                
-                with database.connect() as conn:
-                    result = conn.execute(text("""SELECT distinct container_id FROM container_perform_info; """)).fetchall()
-                    file_data=[]
-                    for i in result:
-                        perform_id=i.container_id
-                        result2 = conn.execute(text("""select * from container_perform_info where container_id='{}' order by time desc limit 60""".format(perform_id)))
+                result = conn.execute(text("""SELECT distinct container_id FROM container_perform_info; """)).fetchall()
+                file_data=[]
+                for i in result:
+                    perform_id=i.container_id
+                    result2 = conn.execute(text("""select * from container_perform_info where container_id='{}' order by time desc limit 60""".format(perform_id)))
 
-                        list_data={perform_id:[]}
-                        for j in result2:
-                            data={}
-                            data["date"]=str(j.time)
-                            data["cpu"]=j.cpu
-                            data["memory"]=j.memory
-                            data["disk_io"]=j.disk_io
-                            data["network"]=j.network_input+j.network_input
-                            data["vfs_io"]="NULL"
+                    list_data={perform_id:[]}
+                    for j in result2:
+                        data={}
+                        data["date"]=str(j.time)
+                        data["cpu"]=j.cpu
+                        data["memory"]=j.memory
+                        data["disk_io"]=j.disk_io
+                        data["network"]=j.network_input+j.network_input
+                        data["vfs_io"]="NULL"
 
-                            list_data[perform_id].append(data)
+                        list_data[perform_id].append(data)
 
-                        file_data.append(list_data)
+                    file_data.append(list_data)
 
 
-                return jsonify(file_data)
+            return jsonify(file_data)
 
         else:
             df=request.json['time']
