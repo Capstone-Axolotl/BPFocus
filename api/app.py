@@ -16,14 +16,15 @@ DISK_LIMIT=80
 NET_LIMIT=80
 VFS_LIMIT=80
 
+app = Flask(__name__)
+app.config.from_pyfile("config.py")    
+
+database = create_engine(app.config['DB_URL'])
+
+app.database = database 
+
+
 def create_app(test_config = None):
-    app = Flask(__name__)
-    app.config.from_pyfile("config.py")    
-
-    database = create_engine(app.config['DB_URL'])
-
-    app.database = database 
-
     @app.route('/insert_user', methods=["POST"])
     def insert_user():
         df=request.json
@@ -60,6 +61,26 @@ def create_app(test_config = None):
         js=json.dumps(result)
 
         return jsonify(js)
+    
+    @app.route('/get_hw')
+    def get_hw():
+        with database.connect() as conn:
+            result = conn.execute(text("""SELECT * FROM hw_info; """)).fetchall()
+        
+        result=[list(row) for row in result]
+        js=json.dumps(result)
+        
+        return jsonify(js)
+    
+    @app.route('/get_disk')
+    def get_disk():
+        with database.connect() as conn:
+            result = conn.execute(text("""SELECT * FROM disk_info; """)).fetchall()
+
+        result=[list(row) for row in result]
+        js=json.dumps(result)
+
+        return jsonify(js)
 
     @app.route('/update_health', methods=["POST"])
     def update_health():
@@ -72,57 +93,7 @@ def create_app(test_config = None):
         return jsonify(df)
 
        
-    @app.route('/get_components')
-    def get_components():
-        file_data={}
-
-        with database.connect() as conn:
-            ID = conn.execute(text("""select id from health_check where status='running'"""))
-            for i in ID:
-                result1=conn.execute(text("""select name, email, id from user_info where id='{}'""".format(i[0])))
-                result2=conn.execute(text("""select container_id, name from container_info where id='{}'""".format(i[0])))
-                data={}
-                file_data["nodes"]=[]
-                file_data["links"]=[]
-                for row in result1:
-                    data["email"]=row.email
-                    data["name"]=row.name
-                    data["id"]=row.id
-                
-                file_data["nodes"].append(data)
-                 
-                for row in result2:
-                    data={}
-                    
-                    data["id"]=row.container_id
-                    data["name"]=row.name
-            
-                    file_data["nodes"].append(data)
-
-                    data={}
-                    
-                    data['source']=i[0]
-                    data['target']=row.container_id
-
-                    file_data["links"].append(data)
-            
-
-
-        with open('/home/gyu/axolotl_front/src/components/Network/components_data.json', 'w', encoding='utf-8') as make_file:
-            json.dump(file_data, make_file, ensure_ascii=False, indent='\t')
-        return jsonify(file_data)
-
-
-    @app.route('/get_hw')
-    def get_hw():
-        with database.connect() as conn:
-            result = conn.execute(text("""SELECT * FROM hw_info; """)).fetchall()
-        
-        result=[list(row) for row in result]
-        js=json.dumps(result)
-        
-        return jsonify(js)
-
+    
     @app.route('/insert_hw', methods=['POST'])
     def insert_hw():
         global ID
@@ -157,16 +128,6 @@ def create_app(test_config = None):
 
         return jsonify(ID)
 
-    @app.route('/get_disk')
-    def get_disk():
-        with database.connect() as conn:
-            result = conn.execute(text("""SELECT * FROM disk_info; """)).fetchall()
-
-        result=[list(row) for row in result]
-        js=json.dumps(result)
-
-        return jsonify(js)
-   
     @app.route('/anomaly', methods=["GET", "POST"])
     def anomaly():
         global CPU_LIMIT, CPU_MAX
@@ -436,8 +397,52 @@ def create_app(test_config = None):
         
     return app
 
+from time import sleep
+def get_components():
+    while True:
+        sleep(5)
+        file_data={}
 
+        with database.connect() as conn:
+            ID = conn.execute(text("""select id from health_check where status='running'"""))
+            for i in ID:
+                result1=conn.execute(text("""select name, email, id from user_info where id='{}'""".format(i[0])))
+                result2=conn.execute(text("""select container_id, name from container_info where id='{}'""".format(i[0])))
+                data={}
+                file_data["nodes"]=[]
+                file_data["links"]=[]
+                for row in result1:
+                    data["email"]=row.email
+                    data["name"]=row.name
+                    data["id"]=row.id
+                
+                file_data["nodes"].append(data)
+                 
+                for row in result2:
+                    data={}
+                    
+                    data["id"]=row.container_id
+                    data["name"]=row.name
+            
+                    file_data["nodes"].append(data)
+
+                    data={}
+                    
+                    data['source']=i[0]
+                    data['target']=row.container_id
+
+                    file_data["links"].append(data)
+        
+
+
+        with open('/home/gyu/axolotl_front/src/components/Network/data.json', 'w', encoding='utf-8') as make_file:
+            json.dump(file_data, make_file, ensure_ascii=False, indent='\t')
+
+
+import threading
 if __name__=="__main__":
+    thread = threading.Thread(target=get_components)
+    thread.start()
 
     app=create_app()
     app.run(host='0.0.0.0', port='5000', debug=True)
