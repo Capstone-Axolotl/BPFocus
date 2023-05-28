@@ -137,13 +137,23 @@ def monitor_container_events(host_id):
     events = client.events(decode=True)
     for event in events:
         if 'status' in event and 'id' in event:
-            container_id = event['id']
+            container_id = event['id'][:12]
             status = event['status']
-            container = client.containers.get(container_id)
-            container_id = container.short_id
 
+            # 컨테이너가 종료된 경우
+            if status == 'die':
+                print(f"[-] Container Died: {container_id}")
+                try:
+                    post_data_async('/container', ids[container_id]['info'], host_id, method='DELETE')
+                    ids[container_id]['status'] = 'exited'
+                    del ids[container_id]
+
+                except KeyError:
+                    post_data_async('/container', {'container_id': container_id}, host_id, method='DELETE')
+                continue
             # 컨테이너가 새로 생성된 경우
-            if status == 'start':
+            elif status =='start':
+                container = client.containers.get(container_id)
                 pid = container.attrs['State']['Pid']
                 # 호스트의 veth* 네트워크 인터페이스와 대응되는 인터페이스 저장
                 try:
@@ -153,9 +163,11 @@ def monitor_container_events(host_id):
                             if link.get_attr('IFLA_IFNAME') == 'eth0':
                                 index = link.get_attr('IFLA_LINK')
                                 veth = ip.get_links(index)[0]
-                                ids[container.short_id] = {
+                                info = get_container_info(container_id)
+                                ids[container_id] = {
                                     'status': 'running',
-                                    'stat': get_container_stat(container.id, veth.get_attr('IFLA_IFNAME'))
+                                    'stat': get_container_stat(container.id, veth.get_attr('IFLA_IFNAME')),
+                                    'info': info
                                 }
 
                 # 부팅과 동시에 종료되는 컨테이너 에러 핸들링
@@ -164,20 +176,8 @@ def monitor_container_events(host_id):
                     continue
 
                 print(f"[+] Container Started: {container_id}")
-                post_data_async('/container', get_container_info(container_id), host_id)
+                post_data_async('/container', ids[container_id]['info'], host_id)
             
-            # 컨테이너가 종료된 경우
-            if status == 'die':
-                print(f"[-] Container Died: {container_id}")
-                if ids[container_id] == 'exited':
-                    print(f"[*] Container exited from start")
-                    del ids[container_id]
-                    continue
-
-                # PUT(수정) METHOD 지원 필요
-                post_data_async('/container', get_container_info(container_id), host_id, method='DELETE')
-                ids[container_id]['status'] = status
-
 HOST_CPU_PATH = "/sys/fs/cgroup/cpu,cpuacct/"
 output_string = read(HOST_CPU_PATH + 'cpuacct.usage_percpu')
 output_list = [int(x) for x in output_string.split()]
@@ -186,7 +186,7 @@ MEMORY_LIMIT = psutil.virtual_memory().total
 def get_running_containers(host_id):
     ip = IPRoute()
     for container in client.containers.list():
-        container_id = container.id
+        container_id = container.short_id
         print(f"[*] container id : {container_id}")
 
         pid = container.attrs['State']['Pid']
@@ -196,12 +196,13 @@ def get_running_containers(host_id):
                 if link.get_attr('IFLA_IFNAME') == 'eth0':
                     index = link.get_attr('IFLA_LINK')
                     veth = ip.get_links(index)[0]
-                    ids[container.short_id] = {
+                    ids[container_id] = {
                         'status': container.status,
-                        'stat': get_container_stat(container_id, veth.get_attr('IFLA_IFNAME'))
+                        'stat': get_container_stat(container.id, veth.get_attr('IFLA_IFNAME')),
+                        'info': get_container_info(container_id)
                     }
-                    # print(ids)
-                    post_data_sync('/container', get_container_info(container_id), host_id)
+                    print(ids)
+                    post_data_sync('/container', ids[container_id]['info'], host_id)
 '''
 def insert_user(host_id):
     data_user = {

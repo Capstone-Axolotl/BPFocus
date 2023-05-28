@@ -66,14 +66,14 @@ try:
         mymap.clear()
 
         memory_percent = psutil.virtual_memory().percent
-
         print(f"[+] 현재 시각: {current_time}")
-        print(f"[*] CPU On-Time: {cpu_ontime}")
-        print(f"[*] Memory Percent: {memory_percent}")
-        print(f"[*] Network Traffic : {network_traffic}")
-        print(f"[*] Logical I/O : {logical_iosize}")
-        print(f"[*] Physical I/O : {physical_iosize}")
-        print()
+        if DEBUG:
+            print(f"[*] CPU On-Time: {cpu_ontime}")
+            print(f"[*] Memory Percent: {memory_percent}")
+            print(f"[*] Network Traffic : {network_traffic}")
+            print(f"[*] Logical I/O : {logical_iosize}")
+            print(f"[*] Physical I/O : {physical_iosize}")
+            print()
         data_performance = {
             'cpu_usg': cpu_ontime,
             'mem_usg': memory_percent,
@@ -86,6 +86,7 @@ try:
         for cid in ids:
             if ids[cid]['status'] != 'running':
                 continue
+
             system_cpu_usage = get_system_cpu_usage()
             container_stat_path = ids[cid]['stat']['paths']
             prev_usages = ids[cid]['stat']['prev_usages']
@@ -120,7 +121,6 @@ try:
             net_input_bytes = int(read(netns_stat_path + 'rx_bytes'))
             net_output_bytes = int(read(netns_stat_path + 'tx_bytes'))
 
-            print(f"[=] Container Id : {cid}")
             data_con_performance = {
                 'cpu': 0,
                 'disk_io': 0,
@@ -134,28 +134,33 @@ try:
                 # HZ (10^{-2})
                 system_cpu_delta = system_cpu_usage - prev_system_cpu_usage
                 cpu_percent = round((cpu_delta / system_cpu_delta) * 100, 2)
-                print(f"[*] cpu_delta : {cpu_delta}")
-                print(f"[*] system_cpu_delta : {system_cpu_delta}")
-                print(f"[*] CPU percent : {cpu_percent}%")
+                if DEBUG:
+                    print(f"[*] cpu_delta : {cpu_delta}")
+                    print(f"[*] system_cpu_delta : {system_cpu_delta}")
+                    print(f"[*] CPU percent : {cpu_percent}%")
                 data_con_performance['cpu'] = cpu_percent
 
-            print(f"[*] Memory percent : {memory_percent}%")
+            if DEBUG:
+                print(f"[*] Memory percent : {memory_percent}%")
             data_con_performance['memory'] = memory_percent
 
             if prev_total_disk_usage != 0:
                 disk_usage = blkio_total_usage - prev_total_disk_usage
-                print(f"[*] Disk Usage : {disk_usage}")
+                if DEBUG:
+                    print(f"[*] Disk Usage : {disk_usage}")
                 data_con_performance['disk_io'] = disk_usage
 
             if prev_total_network_output_usage != 0 or prev_total_network_input_usage != 0:
                 network_input_usage = net_output_bytes - prev_total_network_output_usage
                 network_output_usage = net_input_bytes - prev_total_network_input_usage
-                print(f"[*] Network Input Usage : {network_input_usage}B")
-                print(f"[*] Network Output Usage : {network_output_usage}B")
+                if DEBUG:
+                    print(f"[*] Network Input Usage : {network_input_usage}B")
+                    print(f"[*] Network Output Usage : {network_output_usage}B")
                 data_con_performance['network_input'] = network_input_usage
                 data_con_performance['network_output'] = network_output_usage
                 
-            print()
+            if DEBUG:
+                print()
         
             post_data_async('/insert_container_perform', data_con_performance, host_id, cid)
             prev_usages['system_cpu_usage'] = system_cpu_usage
