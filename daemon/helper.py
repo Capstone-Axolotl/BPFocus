@@ -1,4 +1,4 @@
-from config import SERVER_IP, SERVER_PORT, SIGNALS
+from config import *
 from pyroute2 import IPRoute, NetNS
 from time import sleep
 import requests
@@ -9,6 +9,7 @@ import platform
 import psutil
 import getpass
 import os
+
 
 def read(path):
     with open(path) as f:
@@ -27,14 +28,16 @@ def post_data_sync(path='/', data=None, host_id=None, container_id=None, method=
     json_data = json.dumps(data)
     url = 'http://' + SERVER_IP + ':' + str(SERVER_PORT) + path
     try:
-        print(f"[*] post_data_sync : {json.dumps(data)}")
+        if DEBUG:
+            print(f"[post_data_sync] path: {path}, data: {json.dumps(data)}")
         response = requests.request(method, url, headers=headers, data=json_data)
 
         if response.status_code == 200:
-            print('Data sent successfully')
+            if DEBUG:
+                print('Data sent successfully')
+                print(response.text)
         else:
             print('Failed to send data')
-        print(response.text)
         if option:
             host_id = int(response.text)
             return host_id
@@ -52,17 +55,20 @@ def post_data_async(path='/', data=None, host_id=None, container_id=None, method
         data['id'] = host_id
     if container_id != None:
         data['container_id'] = container_id
+
     json_data = json.dumps(data)
     url = 'http://' + SERVER_IP + ':' + str(SERVER_PORT) + path
     def send_request():
         try:
-            print(f"[*] post_data_async : {json.dumps(data)}")
+            if DEBUG:
+                print(f"[post_data_async] path: {path}, data: {json.dumps(data)}")
             response = requests.request(method, url, headers=headers, data=json_data)
             if response.status_code == 200:
-                print('Data sent successfully')
+                if DEBUG:
+                    print('Data sent successfully')
+                    print(response.text)
             else:
                 print('Failed to send data')
-            print(response.text)
         except requests.exceptions.ConnectionError:
             print('[*] Aggregator Server is down')
 
@@ -143,18 +149,25 @@ def monitor_container_events(host_id):
             # 컨테이너가 종료된 경우
             if status == 'die':
                 print(f"[-] Container Died: {container_id}")
+                print(1, status, container_id)
                 try:
-                    post_data_async('/container', ids[container_id]['info'], host_id, method='DELETE')
+                    print(2, status)
                     ids[container_id]['status'] = 'exited'
+                    print(3, status)
+                    post_data_async('/container', ids[container_id]['info'], host_id, method='DELETE')
+                    print(4, status)
                     del ids[container_id]
-
                 except KeyError:
+                    print(5, status)
                     post_data_async('/container', {'container_id': container_id}, host_id, method='DELETE')
-                continue
+
             # 컨테이너가 새로 생성된 경우
             elif status =='start':
+                print(1, status, container_id)
                 container = client.containers.get(container_id)
+                print(2, status)
                 pid = container.attrs['State']['Pid']
+                print(3, status)
                 # 호스트의 veth* 네트워크 인터페이스와 대응되는 인터페이스 저장
                 try:
                     with NetNS(f"/proc/{pid}/ns/net") as ns:
@@ -172,11 +185,15 @@ def monitor_container_events(host_id):
 
                 # 부팅과 동시에 종료되는 컨테이너 에러 핸들링
                 except FileNotFoundError:
+                    print(4, status)
                     ids[container_id] = 'exited'
-                    continue
+                    break
+                except Exception as e:
+                    print(e)
 
                 print(f"[+] Container Started: {container_id}")
                 post_data_async('/container', ids[container_id]['info'], host_id)
+                print(5, status)
             
 HOST_CPU_PATH = "/sys/fs/cgroup/cpu,cpuacct/"
 output_string = read(HOST_CPU_PATH + 'cpuacct.usage_percpu')
@@ -184,6 +201,7 @@ output_list = [int(x) for x in output_string.split()]
 NUMBER_OF_CPUS = sum(1 for x in output_list if x != 0)
 MEMORY_LIMIT = psutil.virtual_memory().total
 def get_running_containers(host_id):
+    print(1)
     ip = IPRoute()
     for container in client.containers.list():
         container_id = container.short_id
@@ -201,7 +219,7 @@ def get_running_containers(host_id):
                         'stat': get_container_stat(container.id, veth.get_attr('IFLA_IFNAME')),
                         'info': get_container_info(container_id)
                     }
-                    print(ids)
+                    # print(ids)
                     post_data_sync('/container', ids[container_id]['info'], host_id)
 '''
 def insert_user(host_id):
@@ -286,3 +304,19 @@ def get_metadata():
     }
     
     return metadata
+
+'''
+# Send Metadata (Initialize done)
+if HOST_ID:
+    host_id = int(HOST_ID)
+else:
+    print("Send Metadata to Aggregator Server... ")
+    host_id = int(post_data_sync('/insert_hw', get_metadata()))
+    with open(CONFIG_PATH, 'r') as f:
+        data = f.read().split()
+
+    with open(CONFIG_PATH, 'w') as f:
+        f.write(f"{data[0]} {data[1]} {host_id}")
+
+monitor_container_events(host_id)
+'''

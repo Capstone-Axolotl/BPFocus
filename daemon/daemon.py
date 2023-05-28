@@ -3,6 +3,7 @@ from bcc import BPF
 from time import sleep, strftime
 from config import *
 from helper import *
+print(2)
 import datetime
 import psutil
 import threading
@@ -32,7 +33,7 @@ if HOST_ID:
     host_id = int(HOST_ID)
 else:
     print("Send Metadata to Aggregator Server... ")
-    host_id = post_data_sync('/insert_hw', get_metadata())
+    host_id = int(post_data_sync('/insert_hw', get_metadata()))
     with open(CONFIG_PATH, 'r') as f:
         data = f.read().split()
 
@@ -49,40 +50,40 @@ thread = threading.Thread(target=monitor_container_events, args=[host_id])
 thread.start()
 
 # Register Signal Handler
-for sig in SIGNALS:
-    signal.signal(sig, handle_exit)
+# for sig in SIGNALS:
+#     signal.signal(sig, handle_exit)
 
 print("Tracing Start...")
-try:
-    while True:
-        sleep(0.5)
-        mymap = b.get_table("mymap")
-        v = mymap.values()
-        current_time = datetime.datetime.now()
-        physical_iosize = v[0].value
-        logical_iosize = v[1].value
-        network_traffic = v[2].value
-        cpu_ontime = v[3].value
-        mymap.clear()
+while True:
+    sleep(0.5)
+    mymap = b.get_table("mymap")
+    v = mymap.values()
+    current_time = datetime.datetime.now()
+    physical_iosize = v[0].value
+    logical_iosize = v[1].value
+    network_traffic = v[2].value
+    cpu_ontime = v[3].value
+    mymap.clear()
 
-        memory_percent = psutil.virtual_memory().percent
-        print(f"[+] 현재 시각: {current_time}")
-        if DEBUG:
-            print(f"[*] CPU On-Time: {cpu_ontime}")
-            print(f"[*] Memory Percent: {memory_percent}")
-            print(f"[*] Network Traffic : {network_traffic}")
-            print(f"[*] Logical I/O : {logical_iosize}")
-            print(f"[*] Physical I/O : {physical_iosize}")
-            print()
-        data_performance = {
-            'cpu_usg': cpu_ontime,
-            'mem_usg': memory_percent,
-            'disk_io': physical_iosize,
-            'vfs_io': logical_iosize,
-            'network': network_traffic
-        }
-        post_data_async('/insert_perform', data_performance, host_id)
+    memory_percent = psutil.virtual_memory().percent
+    print(f"[+] 현재 시각: {current_time}")
+    if DEBUG:
+        print(f"[*] CPU On-Time: {cpu_ontime}")
+        print(f"[*] Memory Percent: {memory_percent}")
+        print(f"[*] Network Traffic : {network_traffic}")
+        print(f"[*] Logical I/O : {logical_iosize}")
+        print(f"[*] Physical I/O : {physical_iosize}")
+        print()
+    data_performance = {
+        'cpu_usg': cpu_ontime,
+        'mem_usg': memory_percent,
+        'disk_io': physical_iosize,
+        'vfs_io': logical_iosize,
+        'network': network_traffic
+    }
+    post_data_async('/insert_perform', data_performance, host_id)
 
+    try:
         for cid in ids:
             if ids[cid]['status'] != 'running':
                 continue
@@ -168,6 +169,24 @@ try:
             prev_usages['total_disk_usage'] = blkio_total_usage
             prev_usages['total_network_input_usage'] = net_output_bytes
             prev_usages['total_network_output_usage'] = net_input_bytes 
+    except RuntimeError as e:
+        print("-----------------------------------------------------------------------")
+        print(f"[*] RUNTIME ERROR: {e}")
+        print("-----------------------------------------------------------------------")
+    except FileNotFoundError as e:
+        print("-----------------------------------------------------------------------")
+        print(f"[*] FILE NOT FOUND ERROR: {e}")
+        print("-----------------------------------------------------------------------")
+    except KeyboardInterrupt:
+        print(f"[*] Good Bye!!!")
+        break
 
+'''
 except KeyboardInterrupt:
     pass
+except Exception as e:
+    print("-----------------------------------------------------------------------")
+    print(f"[*] ERROR: {e}")
+    print("-----------------------------------------------------------------------")
+'''
+
