@@ -164,15 +164,19 @@ def monitor_container_events(host_id):
 
             # 컨테이너가 새로 생성된 경우
             elif status =='start':
-                print(1, status, container_id)
+                if DEBUG:
+                    print(1, status, container_id)
                 container = client.containers.get(container_id)
-                print(2, status)
+                if DEBUG:
+                    print(2, status)
                 pid = container.attrs['State']['Pid']
-                print(3, status)
+                if DEBUG:
+                    print(3, status)
                 # 호스트의 veth* 네트워크 인터페이스와 대응되는 인터페이스 저장
                 try:
                     with NetNS(f"/proc/{pid}/ns/net") as ns:
-                        print(3.1, status)
+                        if DEBUG:
+                            print(3.1, status)
                         links = ns.get_links()
                         for link in links:
                             print(link.get_attr('IFLA_IFNAME'))
@@ -189,24 +193,30 @@ def monitor_container_events(host_id):
                                 print(container_num[0])
 
                             elif link.get_attr('IFLA_IFNAME') == 'eth0':
-                                print(3.2, status, link.get_attr('IFLA_LINK'))
+                                if DEBUG:
+                                    print(3.2, status, link.get_attr('IFLA_LINK'))
                                 index = link.get_attr('IFLA_LINK')
-                                print(3.3, status, index, ip.get_links(index))
+                                if DEBUG:
+                                    print(3.3, status, index, ip.get_links(index))
                                 veth = ip.get_links(index)[0]
-                                print(3.4, status)
+                                if DEBUG:
+                                    print(3.4, status)
                                 info = get_container_info(container_id)
-                                print(3.5, status)
+                                if DEBUG:
+                                    print(3.5, status)
                                 ids[container_id] = {
                                     'status': 'running',
                                     'stat': get_container_stat(container.id, veth.get_attr('IFLA_IFNAME')),
                                     'info': info,
                                     'network': 'bridge'
                                 }
-                                print(3.6, status)
+                                if DEBUG:
+                                    print(3.6, status)
 
                 # 부팅과 동시에 종료되는 컨테이너 에러 핸들링
                 except FileNotFoundError:
-                    print(4, status)
+                    if DEBUG:
+                        print(4, status)
                     ids[container_id] = 'exited'
                     break
                 except Exception as e:
@@ -214,7 +224,8 @@ def monitor_container_events(host_id):
 
                 print(f"[+] Container Started: {container_id}")
                 post_data_async('/container', ids[container_id]['info'], host_id)
-                print(5, status)
+                if DEBUG:
+                    print(5, status)
             
 HOST_CPU_PATH = "/sys/fs/cgroup/cpu,cpuacct/"
 output_string = read(HOST_CPU_PATH + 'cpuacct.usage_percpu')
