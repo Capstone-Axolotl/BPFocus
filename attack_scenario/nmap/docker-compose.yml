@@ -1,0 +1,41 @@
+version: "3"
+services:
+    ping:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        stdin_open: true
+        tty: true
+        cap_add:
+        - ALL
+        entrypoint: ["/ping_start.sh"]
+    victim1:
+        image: ubuntu:latest
+        entrypoint: ["sleep", "inf"]
+    victim2:
+        image: ubuntu:latest
+        entrypoint: ["sleep", "inf"]
+    victim3:
+        image: ubuntu:latest
+        entrypoint: ["sleep", "inf"]
+    victim4:
+        image: ubuntu:latest
+        entrypoint: ["sleep", "inf"]
+    victim5:
+        image: ubuntu:latest
+        entrypoint: ["sleep", "inf"]
+    victim6:
+        image: ubuntu:latest
+        entrypoint: ["sleep", "inf"]
+    victim7:
+        image: ubuntu:latest
+        entrypoint: ["sleep", "inf"]
+    victim8:
+        image: ubuntu:latest
+        entrypoint: ["sleep", "inf"]
+    victim9:
+        image: ubuntu:latest
+        entrypoint: ["sleep", "inf"]
+    victim10:
+        image: ubuntu:latest
+        entrypoint: ["sleep", "inf"]
