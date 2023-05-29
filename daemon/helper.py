@@ -28,14 +28,12 @@ def post_data_sync(path='/', data=None, host_id=None, container_id=None, method=
     json_data = json.dumps(data)
     url = 'http://' + SERVER_IP + ':' + str(SERVER_PORT) + path
     try:
-        if DEBUG:
-            print(f"[post_data_sync] path: {path}, data: {json.dumps(data)}")
+        print(f"[post_data_sync] path: {path}, data: {json.dumps(data)}")
         response = requests.request(method, url, headers=headers, data=json_data)
 
         if response.status_code == 200:
-            if DEBUG:
-                print('Data sent successfully')
-                print(response.text)
+            print('Data sent successfully')
+            print(response.text)
         else:
             print('Failed to send data')
         if option:
@@ -60,13 +58,11 @@ def post_data_async(path='/', data=None, host_id=None, container_id=None, method
     url = 'http://' + SERVER_IP + ':' + str(SERVER_PORT) + path
     def send_request():
         try:
-            if DEBUG:
-                print(f"[post_data_async] path: {path}, data: {json.dumps(data)}")
+            print(f"[post_data_async] path: {path}, data: {json.dumps(data)}")
             response = requests.request(method, url, headers=headers, data=json_data)
             if response.status_code == 200:
-                if DEBUG:
-                    print('Data sent successfully')
-                    print(response.text)
+                print('Data sent successfully')
+                print(response.text)
             else:
                 print('Failed to send data')
         except requests.exceptions.ConnectionError:
@@ -171,17 +167,24 @@ def monitor_container_events(host_id):
                 # 호스트의 veth* 네트워크 인터페이스와 대응되는 인터페이스 저장
                 try:
                     with NetNS(f"/proc/{pid}/ns/net") as ns:
+                        print(3.1, status)
                         links = ns.get_links()
                         for link in links:
-                            if link.get_attr('IFLA_IFNAME') == 'eth0':
+                            print(link.get_attr('IFLA_IFNAME'))
+                            if link.get_attr('IFLA_IFNAME') in ['eth0', 'wlp45s0']:
+                                print(3.2, status, link.get_attr('IFLA_LINK'))
                                 index = link.get_attr('IFLA_LINK')
+                                print(3.3, status, index, ip.get_links(index))
                                 veth = ip.get_links(index)[0]
+                                print(3.4, status)
                                 info = get_container_info(container_id)
+                                print(3.5, status)
                                 ids[container_id] = {
                                     'status': 'running',
                                     'stat': get_container_stat(container.id, veth.get_attr('IFLA_IFNAME')),
                                     'info': info
                                 }
+                                print(3.6, status)
 
                 # 부팅과 동시에 종료되는 컨테이너 에러 핸들링
                 except FileNotFoundError:

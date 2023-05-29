@@ -8,7 +8,7 @@ typedef struct entry_key {
 } entry_key_t;
 
 BPF_HASH(start, entry_key_t, u64, MAX_PID);
-BPF_ARRAY(mymap, u64, 4);
+BPF_ARRAY(mymap, u64, 5);
 static inline void store_start(u32 tgid, u32 pid, u32 cpu, u64 ts)
 {
     if (pid == 0)
@@ -112,7 +112,7 @@ TRACEPOINT_PROBE(net, napi_gro_receive_entry)
 
 TRACEPOINT_PROBE(net, net_dev_xmit)
 {
-    u32 key = 2;
+    u32 key = 4;
     u64 *val = mymap.lookup(&key);
     if (val) {
         lock_xadd(val, args->len);

@@ -3,7 +3,6 @@ from bcc import BPF
 from time import sleep, strftime
 from config import *
 from helper import *
-print(2)
 import datetime
 import psutil
 import threading
@@ -61,8 +60,9 @@ while True:
     current_time = datetime.datetime.now()
     physical_iosize = v[0].value
     logical_iosize = v[1].value
-    network_traffic = v[2].value
+    network_inbound_traffic = v[2].value
     cpu_ontime = v[3].value
+    network_outbound_traffic = v[4].value
     mymap.clear()
 
     memory_percent = psutil.virtual_memory().percent
@@ -70,7 +70,8 @@ while True:
     if DEBUG:
         print(f"[*] CPU On-Time: {cpu_ontime}")
         print(f"[*] Memory Percent: {memory_percent}")
-        print(f"[*] Network Traffic : {network_traffic}")
+        print(f"[*] Network Inbound Traffic : {network_inbound_traffic}")
+        print(f"[*] Network Outbound Traffic : {network_outbound_traffic}")
         print(f"[*] Logical I/O : {logical_iosize}")
         print(f"[*] Physical I/O : {physical_iosize}")
         print()
@@ -79,9 +80,11 @@ while True:
         'mem_usg': memory_percent,
         'disk_io': physical_iosize,
         'vfs_io': logical_iosize,
-        'network': network_traffic
+        'net_in': network_inbound_traffic,
+        'net_out': network_outbound_traffic
     }
-    post_data_async('/insert_perform', data_performance, host_id)
+    print(data_performance)
+    # post_data_async('/insert_perform', data_performance, host_id)
 
     try:
         for cid in ids:
