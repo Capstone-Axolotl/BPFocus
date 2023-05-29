@@ -132,9 +132,11 @@ def get_container_stat(cid, vethi):
     return container_stat
 
 ids = {}
+container_num = [1]
 client = docker.from_env()
 def monitor_container_events(host_id):
     global ids
+    global container_num
     ip = IPRoute()
     events = client.events(decode=True)
     for event in events:
@@ -149,6 +151,9 @@ def monitor_container_events(host_id):
                 try:
                     print(2, status)
                     ids[container_id]['status'] = 'exited'
+                    if ids[container_id]['network'] == 'host':
+                        container_num[0] -= 1
+                        print(f"[exited] container_num : {container_num[0]}")
                     print(3, status)
                     post_data_async('/container', ids[container_id]['info'], host_id, method='DELETE')
                     print(4, status)
@@ -171,7 +176,19 @@ def monitor_container_events(host_id):
                         links = ns.get_links()
                         for link in links:
                             print(link.get_attr('IFLA_IFNAME'))
-                            if link.get_attr('IFLA_IFNAME') in ['eth0', 'wlp45s0']:
+                            if link.get_attr('IFLA_IFNAME').startswith('wl'):
+                                print("[*] HOST")
+                                info = get_container_info(container_id)
+                                ids[container_id] = {
+                                    'status': 'running',
+                                    'stat': get_container_stat(container.id, link.get_attr('IFLA_IFNAME')),
+                                    'info': info,
+                                    'network': 'host'
+                                }
+                                container_num[0] += 1
+                                print(container_num[0])
+
+                            elif link.get_attr('IFLA_IFNAME') == 'eth0':
                                 print(3.2, status, link.get_attr('IFLA_LINK'))
                                 index = link.get_attr('IFLA_LINK')
                                 print(3.3, status, index, ip.get_links(index))
@@ -182,7 +199,8 @@ def monitor_container_events(host_id):
                                 ids[container_id] = {
                                     'status': 'running',
                                     'stat': get_container_stat(container.id, veth.get_attr('IFLA_IFNAME')),
-                                    'info': info
+                                    'info': info,
+                                    'network': 'bridge'
                                 }
                                 print(3.6, status)
 
