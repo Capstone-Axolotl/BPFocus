@@ -187,10 +187,14 @@ while True:
             if prev_total_network_output_usage != 0 or prev_total_network_input_usage != 0:
                 network_input_usage = net_output_bytes - prev_total_network_output_usage
                 network_output_usage = net_input_bytes - prev_total_network_input_usage
-                print(f"[*] Network Input Usage : {network_input_usage}, {container_num[0]}B")
-                print(f"[*] Network Output Usage : {network_output_usage}, {container_num[0]}B")
-                data_con_performance['net_in'] = network_input_usage / container_num[0]
-                data_con_performance['net_out'] = network_output_usage / container_num[0]
+                print(f"[*] Network Input Usage : {network_input_usage}B")
+                print(f"[*] Network Output Usage : {network_output_usage}B")
+                if ids[container_id]['network'] == 'host':
+                    data_con_performance['net_in'] = network_input_usage / container_num[0]
+                    data_con_performance['net_out'] = network_output_usage / container_num[0]
+                else:
+                    data_con_performance['net_in'] = network_input_usage
+                    data_con_performance['net_out'] = network_output_usage
                 
             if DEBUG:
                 print()
