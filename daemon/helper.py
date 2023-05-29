@@ -233,7 +233,6 @@ output_list = [int(x) for x in output_string.split()]
 NUMBER_OF_CPUS = sum(1 for x in output_list if x != 0)
 MEMORY_LIMIT = psutil.virtual_memory().total
 def get_running_containers(host_id):
-    print(1)
     ip = IPRoute()
     for container in client.containers.list():
         container_id = container.short_id

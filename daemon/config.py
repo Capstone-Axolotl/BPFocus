@@ -1,23 +1,17 @@
 import os
-print(1)
 DEBUG = False
 FILE = "daemon.c"
 CONFIG_PATH = os.path.expanduser('~/.axolotl_config')
 SERVER_IP = ''
 SERVER_PORT = ''
 HOST_ID = False
-print(2)
 if os.path.exists(CONFIG_PATH):
-    print(3)
     with open(CONFIG_PATH, 'r') as f:
         data = f.read().split()
-    print(4)
     SERVER_IP = data[0]
     SERVER_PORT = data[1]
-    print(5)
     if len(data) == 3:
          HOST_ID = int(data[2])
-    print(6)
 
 else:
     SERVER_IP = '127.0.0.1'
