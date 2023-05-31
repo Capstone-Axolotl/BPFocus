@@ -102,6 +102,7 @@ while True:
     post_data_async('/insert_perform', data_performance, host_id)
 
     try:
+        networks = []
         for cid in ids:
             if ids[cid]['status'] != 'running':
                 continue
@@ -188,22 +189,25 @@ while True:
             if DEBUG:
                 print(9)
             if prev_total_network_output_usage != 0 or prev_total_network_input_usage != 0:
-                network_input_usage = net_output_bytes - prev_total_network_output_usage
-                network_output_usage = net_input_bytes - prev_total_network_input_usage
-                print(f"[*] Network Input Usage : {network_input_usage}B")
-                print(f"[*] Network Output Usage : {network_output_usage}B")
                 if ids[cid]['network'] == 'host':
-                    data_con_performance['net_in'] = network_input_usage / container_num[0]
-                    data_con_performance['net_out'] = network_output_usage / container_num[0]
+                    network_input_usage = net_output_bytes - prev_total_network_output_usage
+                    network_output_usage = net_input_bytes - prev_total_network_input_usage
+                    data_con_performance['net_out'] = network_input_usage / container_num[0]
+                    data_con_performance['net_in'] = network_output_usage / container_num[0]
                 else:
+                    network_input_usage = net_output_bytes - prev_total_network_output_usage
+                    network_output_usage = net_input_bytes - prev_total_network_input_usage
                     data_con_performance['net_in'] = network_input_usage
                     data_con_performance['net_out'] = network_output_usage
+                print(f"[*] Network Input Usage : {network_input_usage}B")
+                print(f"[*] Network Output Usage : {network_output_usage}B")
                 
             if DEBUG:
                 print()
             
             if DEBUG:
                 print(10)
+            networks.append({cid: {"net_in": data_con_performance['net_in'], "net_out": data_con_performance['net_out']}})
             post_data_async('/insert_container_perform', data_con_performance, host_id, cid)
             prev_usages['system_cpu_usage'] = system_cpu_usage
             prev_usages['total_cpu_usage'] = total_cpu_usage
@@ -225,6 +229,7 @@ while True:
         print("-----------------------------------------------------------------------")
         print(e)
         print("-----------------------------------------------------------------------")
+    print(networks)
 
 '''
 except KeyboardInterrupt:
