@@ -28,7 +28,7 @@ def post_data_sync(path='/', data=None, host_id=None, container_id=None, method=
     json_data = json.dumps(data)
     url = 'http://' + SERVER_IP + ':' + str(SERVER_PORT) + path
     try:
-        print(f"[post_data_sync] path: {path}, data: {json.dumps(data)}")
+        # print(f"[post_data_sync] path: {path}, data: {json.dumps(data)}")
         response = requests.request(method, url, headers=headers, data=json_data)
 
         if response.status_code == 200:
@@ -58,7 +58,7 @@ def post_data_async(path='/', data=None, host_id=None, container_id=None, method
     url = 'http://' + SERVER_IP + ':' + str(SERVER_PORT) + path
     def send_request():
         try:
-            print(f"[post_data_async] path: {path}, data: {json.dumps(data)}")
+            # print(f"[post_data_async] path: {path}, data: {json.dumps(data)}")
             response = requests.request(method, url, headers=headers, data=json_data)
             if response.status_code == 200:
                 print('Data sent successfully')
@@ -173,36 +173,23 @@ def monitor_container_events(host_id):
             # 컨테이너가 종료된 경우
             if status == 'die':
                 print(f"[-] Container Died: {container_id}")
-                print(1, status, container_id)
                 try:
-                    print(2, status)
                     ids[container_id]['status'] = 'exited'
                     if ids[container_id]['network'] == 'host':
                         container_num[0] -= 1
                         print(f"[exited] container_num : {container_num[0]}")
-                    print(3, status)
                     post_data_async('/container', ids[container_id]['info'], host_id, method='DELETE')
-                    print(4, status)
                     del ids[container_id]
                 except KeyError:
-                    print(5, status)
                     post_data_async('/container', {'container_id': container_id}, host_id, method='DELETE')
 
             # 컨테이너가 새로 생성된 경우
             elif status =='start':
-                if DEBUG:
-                    print(1, status, container_id)
                 container = client.containers.get(container_id)
-                if DEBUG:
-                    print(2, status)
                 pid = container.attrs['State']['Pid']
-                if DEBUG:
-                    print(3, status)
                 # 호스트의 veth* 네트워크 인터페이스와 대응되는 인터페이스 저장
                 try:
                     with NetNS(f"/proc/{pid}/ns/net") as ns:
-                        if DEBUG:
-                            print(3.1, status)
                         links = ns.get_links()
                         for link in links:
                             print(link.get_attr('IFLA_IFNAME'))
@@ -219,30 +206,18 @@ def monitor_container_events(host_id):
                                 print(container_num[0])
 
                             elif link.get_attr('IFLA_IFNAME') == 'eth0':
-                                if DEBUG:
-                                    print(3.2, status, link.get_attr('IFLA_LINK'))
                                 index = link.get_attr('IFLA_LINK')
-                                if DEBUG:
-                                    print(3.3, status, index, ip.get_links(index))
                                 veth = ip.get_links(index)[0]
-                                if DEBUG:
-                                    print(3.4, status)
                                 info = get_container_info(container_id)
-                                if DEBUG:
-                                    print(3.5, status)
                                 ids[container_id] = {
                                     'status': 'running',
                                     'stat': get_container_stat(container.id, veth.get_attr('IFLA_IFNAME')),
                                     'info': info,
                                     'network': 'bridge'
                                 }
-                                if DEBUG:
-                                    print(3.6, status)
 
                 # 부팅과 동시에 종료되는 컨테이너 에러 핸들링
                 except FileNotFoundError:
-                    if DEBUG:
-                        print(4, status)
                     ids[container_id] = 'exited'
                     break
                 except Exception as e:
@@ -250,8 +225,6 @@ def monitor_container_events(host_id):
 
                 print(f"[+] Container Started: {container_id}")
                 post_data_async('/container', ids[container_id]['info'], host_id)
-                if DEBUG:
-                    print(5, status)
             
 HOST_CPU_PATH = "/sys/fs/cgroup/cpu,cpuacct/"
 output_string = read(HOST_CPU_PATH + 'cpuacct.usage_percpu')
@@ -274,7 +247,8 @@ def get_running_containers(host_id):
                     ids[container_id] = {
                         'status': container.status,
                         'stat': get_container_stat(container.id, veth.get_attr('IFLA_IFNAME')),
-                        'info': get_container_info(container_id)
+                        'info': get_container_info(container_id),
+                        'network': get_container_info(container_id)['networks']
                     }
                     # print(ids)
                     post_data_sync('/container', ids[container_id]['info'], host_id)

