@@ -11,7 +11,7 @@ from atomicwrites import atomic_write
 ID=0
 CPU_MAX=5000000
 DISK_MAX=10000
-NET_MAX=1500000
+NET_MAX=1000000
 VFS_MAX=10000
 
 app = Flask(__name__)
@@ -205,7 +205,7 @@ def create_app(test_config = None):
             json.dump(file_data, make_file, ensure_ascii=False, indent='\t')
             return jsonify(file_data)
 
-    @app.route('/disable_time')
+    @app.route('/disable_time', methods=["POST"])
     def disable_time():
         with database.connect() as conn:
             result = conn.execute(text("""select * from disable_time"""))
@@ -222,14 +222,15 @@ def create_app(test_config = None):
 
     @app.route('/get_perform', methods=["POST"])
     def get_perform():
-        df=request.json['date']
+        df=request.json
+
         with database.connect() as conn:
-            result = conn.execute(text("""select distinct id from perform_info where time < '{}'""".format(df)))
+            result = conn.execute(text("""select distinct id from perform_info where '{}' < time and time < '{}'""".format(df["f_date"], df["s_date"])))
         
             file_data={}
             for i in result:
                 perform_id=str(i.id)
-                result2 = conn.execute(text("""select * from perform_info where id={} and time < '{}' order by time desc limit 60""".format(perform_id, df)))
+                result2 = conn.execute(text("""select * from perform_info where id={} and '{}' < time and time < '{}' order by time desc limit 60""".format(perform_id, df["f_date"], df["s_date"])))
 
                 file_data[perform_id]=[]
                 for j in result2:
@@ -244,10 +245,10 @@ def create_app(test_config = None):
 
                     file_data[perform_id].append(data)
             
-            result = conn.execute(text("""select distinct container_id from container_perform_info where time < '{}'""".format(df)))
+            result = conn.execute(text("""select distinct container_id from container_perform_info where '{}' < time and time < '{}'""".format(df["f_date"], df["s_date"])))
             for i in result:
                 perform_id=i.container_id
-                result2 = conn.execute(text("""select * from container_perform_info where container_id='{}' and time < '{}' order by time desc limit 60""".format(perform_id, df))) 
+                result2 = conn.execute(text("""select * from container_perform_info where container_id='{}' and '{}' < time and time < '{}' order by time desc limit 60""".format(perform_id, df["f_date"], df["s_date"]))) 
                 file_data[perform_id]=[]
                 for j in result2:
                     data={}
