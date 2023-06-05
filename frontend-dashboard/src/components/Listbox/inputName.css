@@ -1,0 +1,15 @@
+.inputName{
+    display: flex;
+    float: left;
+
+    position: absolute;
+    top: 85%;
+    left: 30px;
+    width: 100%;
+}
+.auto{
+    margin-right: 10px;
+}
+.text{
+    width: 200px;
+}

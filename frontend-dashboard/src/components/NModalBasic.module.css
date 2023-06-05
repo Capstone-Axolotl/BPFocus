@@ -1,0 +1,42 @@
+.container {
+  /*모달 창 위치 고정*/
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 50%;
+  margin-top: 3px;
+  z-index: 100;
+  /*스타일링*/
+  background-color: rgba(112, 128, 144, 0.9);
+  padding: 20px;
+  border-radius: 10px;
+  border: black;
+  position: absolute;
+  top: 10vh;
+  flex-direction: column;
+  max-height: 100%;
+  width: 50vw;
+  height: 88vh;
+  text-align: center;
+  display: flex;
+  align-content: center;
+  align-items: center;
+  }
+  
+  /* 모달창 내부 X버튼 */
+  .close {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+  }
+
+  .tablebody{
+    padding-left: 50px;
+    margin: 50px;
+    height: 65vh;
+    width: 65vh;
+    flex-direction: row;
+    float: left;
+    justify-content: center;
+    align-self: center;
+  }

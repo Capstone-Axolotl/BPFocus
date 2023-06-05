@@ -1,0 +1,64 @@
+.App {
+  text-align: center;
+}
+body{
+  overflow: hidden;
+  background-color: black;
+}
+.App-logo {
+  height: 10vmin;
+  pointer-events: none;
+  position: relative;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    
+    /*logo 이미지 회전*/
+  /*  animation: App-logo-spin infinite 20s linear;*/
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 10vh;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  font-size: calc(10px + 1vmin);
+  color: white;
+  padding-right: 30px;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+.Side{
+  overflow: hidden;
+  margin: 0 auto;
+  background-color: #282c34;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@font-face {
+  font-family: "digital";
+  src: url(./LABdigital.ttf);
+  unicode-range: U+0030-0039;
+}
+
+@font-face {
+  font-family: "digital";
+  src: url(./LABdigital.ttf);
+  unicode-range: U+AC00-D7A3;
+}
+

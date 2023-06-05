@@ -1,0 +1,8 @@
+.open-modal{
+    z-index: 30;
+    background-color:transparent;
+    border: none;
+    padding-top: 10px;
+    position: absolute;
+    right: 0;
+}

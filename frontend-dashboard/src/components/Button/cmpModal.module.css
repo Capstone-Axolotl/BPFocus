@@ -1,0 +1,8 @@
+.opencmpmodal{
+    background-color:transparent;
+    border: none;
+    padding-top: 10px;
+    position: absolute;
+    left: 0;
+    z-index: 20;
+}

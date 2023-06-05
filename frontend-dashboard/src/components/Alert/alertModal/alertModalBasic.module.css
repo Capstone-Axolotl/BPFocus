@@ -1,0 +1,36 @@
+.container {
+    /*모달 창 위치 고정*/
+    position: fixed;
+    bottom: 10vh;
+    left:0;
+    margin-top: 3px;
+    z-index: 200;
+  
+    
+    
+    /*스타일링*/
+  
+    background-color:rgba(65, 65, 65, 0.9);
+    padding: 20px;
+    border-radius: 10px;
+    min-height: 100%-40vh;
+    border: black;
+    position: absolute;
+    top: 10vh;
+    flex-direction: column;
+    max-height: 100%;
+    width: 30vw;
+    height: 40vh;
+    text-align: center;
+    display: flex;
+    align-content: center;
+    align-items: center;
+    color:black
+    }
+    
+    /* 모달창 내부 X버튼 */
+    .close {
+      position: absolute;
+      right: 10px;
+      top: 10px;
+    }
