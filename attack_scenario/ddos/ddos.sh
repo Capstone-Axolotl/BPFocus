@@ -10,7 +10,7 @@ cat <<EOC
         network_mode: host
         stdin_open: true
         tty: true
-        entrypoint: ["hping3", "192.168.0.4", "-p", "80", "-S", "-A", "--flood", "-d", "1000"]
+        entrypoint: ["hping3", "172.19.0.207", "-p", "80", "-S", "-A", "--flood", "-d", "4000"]
         cap_add:
         - ALL
 EOC
