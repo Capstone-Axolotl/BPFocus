@@ -7,7 +7,7 @@
 - Print endpoint performance information in real-time as a heat map using saturation
 
 ## How?
-- **Aggregator Server**
+**Aggregator Server**
 
 need to build a mariadb environment and install some dependencies before running.
 
@@ -22,7 +22,7 @@ sudo npm install -g create-react-app
 npm start
 ```
 
-- **Client**
+**Client**
 
 need to install some dependencies before running. (see `daemon` directory)
 
