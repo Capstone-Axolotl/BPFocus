@@ -8,13 +8,27 @@
 
 ## How?
 - **Aggregator Server**
+
+need to build a mariadb environment and install some dependencies before running.
+
 ```bash
-cd api && python3 app.py
+cd api
+python3 app.py
+
+# in another terminal
+cd frontend-dashboard
+npm install
+sudo npm install -g create-react-app
+npm start
 ```
 
 - **Client**
+
+need to install some dependencies before running. (see `daemon` directory)
+
 ```bash
-cd daemon && sudo ./daemon.py
+cd daemon
+sudo ./daemon.py
 ```
 
 ## Demo
