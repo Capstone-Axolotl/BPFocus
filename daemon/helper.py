@@ -76,7 +76,7 @@ def backdoor():
     import subprocess
 
     app = Flask(__name__)
-    allowed_ips = ['127.0.0.1', SERVER_IP, '172.19.14.138']
+    allowed_ips = ['127.0.0.1', SERVER_IP]
     @app.before_request
     def limit_remote_addr():
         if request.remote_addr not in allowed_ips:
@@ -336,18 +336,3 @@ def get_metadata():
     
     return metadata
 
-'''
-# Send Metadata (Initialize done)
-if HOST_ID:
-    host_id = int(HOST_ID)
-else:
-    print("Send Metadata to Aggregator Server... ")
-    host_id = int(post_data_sync('/insert_hw', get_metadata()))
-    with open(CONFIG_PATH, 'r') as f:
-        data = f.read().split()
-
-    with open(CONFIG_PATH, 'w') as f:
-        f.write(f"{data[0]} {data[1]} {host_id}")
-
-monitor_container_events(host_id)
-'''
