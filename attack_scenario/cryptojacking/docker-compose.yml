@@ -8,7 +8,7 @@ services:
                         - MINING_POOL=rx.unmineable.com:3333
                         - MINING_COIN=SHIB
                         - REFERRAL_CODE=7lkr-kmhq
-                        - WALLET_ADDRESS=0x989fbe40a7c62bd7f1d78266fbe23dcc8e3220be
+                        - WALLET_ADDRESS=<your_address>
                         - WORKER_NAME=docker-mining
                 restart: unless-stopped          
                 stdin_open: true
@@ -21,7 +21,7 @@ services:
                         - MINING_POOL=rx.unmineable.com:3333
                         - MINING_COIN=SHIB
                         - REFERRAL_CODE=7lkr-kmhq
-                        - WALLET_ADDRESS=0x989fbe40a7c62bd7f1d78266fbe23dcc8e3220be
+                        - WALLET_ADDRESS=<your_address>
                         - WORKER_NAME=docker-mining
                 restart: unless-stopped
                 stdin_open: true
@@ -34,7 +34,7 @@ services:
                         - MINING_POOL=rx.unmineable.com:3333
                         - MINING_COIN=SHIB
                         - REFERRAL_CODE=7lkr-kmhq
-                        - WALLET_ADDRESS=0x989fbe40a7c62bd7f1d78266fbe23dcc8e3220be
+                        - WALLET_ADDRESS=<your_address>
                         - WORKER_NAME=docker-mining
                 restart: unless-stopped
                 stdin_open: true
